@@ -1,0 +1,175 @@
+/// Prisma data model for NeoChyrp.
+/// Notes:
+/// - Keep models lean; derived/denormalized data should be materialized via views or caching later.
+/// - Avoid premature relations for modules you haven't implemented yet; mark with TODO comments.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Core user accounts. Authentication mediated through Supabase Auth (id matches auth.uid) or NextAuth adapter.
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  displayName   String
+  bio           String?   @db.Text
+  avatarUrl     String?   @db.Text
+  role          UserRole  @default(USER)
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum UserRole {
+  USER
+  AUTHOR
+  MODERATOR
+  ADMIN
+  OWNER
+}
+
+/// Generic Post record; specific Feather types supply specialized data via discriminated union approach (type + json). 
+model Post {
+  id            String          @id @default(cuid())
+  slug          String          @unique
+  title         String?
+  authorId      String
+  author        User            @relation(fields: [authorId], references: [id])
+  body          String?         @db.Text // Raw (markdown, html, etc.)
+  renderedBody  String?         @db.Text // Cached rendered HTML (for performance + read_more truncation)
+  excerpt       String?         @db.Text
+  feather       FeatherType     // Equivalent to legacy feathers (text, photo, etc.)
+  featherData   Json?           // Structured metadata: e.g. image urls, quote source, link target.
+  visibility    PostVisibility  @default(PUBLISHED)
+  publishedAt   DateTime?       // Null until published
+  tags          PostTag[]
+  categories    PostCategory[]
+  comments      Comment[]
+  likes         Like[]
+  views         PostView[]
+  mentions      WebMention[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  @@index([feather])
+  @@index([publishedAt])
+}
+
+enum FeatherType {
+  TEXT
+  PHOTO
+  QUOTE
+  LINK
+  VIDEO
+  AUDIO
+  UPLOADER
+}
+
+enum PostVisibility {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  PRIVATE
+  ARCHIVED
+}
+
+model Tag {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  posts     PostTag[]
+  createdAt DateTime  @default(now())
+}
+
+model PostTag {
+  postId String
+  tagId  String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  @@id([postId, tagId])
+}
+
+model Category {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  slug      String          @unique
+  parentId  String?         // Optional nested categories (simple hierarchy)
+  children  Category[]      @relation("CategoryToCategory")
+  parent    Category?       @relation("CategoryToCategory", fields: [parentId], references: [id])
+  posts     PostCategory[]
+  createdAt DateTime        @default(now())
+}
+
+model PostCategory {
+  postId     String
+  categoryId String
+  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@id([postId, categoryId])
+}
+
+model Comment {
+  id        String      @id @default(cuid())
+  postId    String
+  post      Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String?
+  author    User?       @relation(fields: [authorId], references: [id])
+  guestName String?
+  guestUrl  String?
+  body      String      @db.Text
+  status    CommentStatus @default(PENDING)
+  parentId  String?
+  children  Comment[]   @relation("CommentToComment")
+  parent    Comment?    @relation("CommentToComment", fields: [parentId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  @@index([postId])
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  SPAM
+  DELETED
+}
+
+model Like {
+  userId String
+  postId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@id([userId, postId])
+}
+
+model PostView {
+  id        String   @id @default(cuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  ipHash    String   // hashed IP for privacy-friendly unique-ish counting
+  userAgent String?
+  createdAt DateTime  @default(now())
+  @@index([postId])
+}
+
+model WebMention {
+  id          String   @id @default(cuid())
+  sourceUrl   String
+  targetUrl   String
+  postId      String?
+  post        Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  type        String?  // like, reply, repost, etc.
+  rawPayload  Json?
+  createdAt   DateTime @default(now())
+  verifiedAt  DateTime?
+  @@index([postId])
+}
+
+// Future: Rights, Attribution, Sitemap records, MathJax cache, Cacher metadata tables etc.

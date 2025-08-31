@@ -1,0 +1,62 @@
+###############################################################################
+# Root .gitignore for NeoChyrp repository
+# - Hybrid repo: legacy Chyrp Lite snapshot (now fully ignored) + new Next.js app.
+# - Patterns use ** so they apply to nested workspace packages.
+# - Prisma migrations should be kept (don't ignore prisma/migrations).
+###############################################################################
+
+# Node / Next.js build artifacts
+**/node_modules
+**/.next
+**/dist
+**/out
+**/.turbo
+**/.vercel
+
+# Coverage / instrumentation
+coverage
+.nyc_output
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment files (keep templates) – root .env.example is tracked
+.env*
+!.env.example
+
+# Prisma local env file (allow migrations history but not secrets)
+prisma/.env
+
+# Build / tool caches
+.eslintcache
+*.tsbuildinfo
+
+# OS cruft
+Thumbs.db
+.DS_Store
+
+# Editor / IDE
+.vscode
+.idea
+*.swp
+*.code-workspace
+
+# Misc coverage outputs
+*.coverage*
+
+# Legacy Chyrp Lite snapshot (fully ignored)
+chyrp-lite-2025.02/
+
+# If you later reintroduce selective tracking inside legacy folder, invert rules below this line.
+
+
+# Uploads retained; rely on nested .gitignore for sensitive patterns
+
+###############################################################################
+# End of file
+###############################################################################
