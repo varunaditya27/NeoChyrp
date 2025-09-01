@@ -13,6 +13,9 @@
 **/.turbo
 **/.vercel
 
+# Next.js auto-generated types
+next-env.d.ts
+
 # Coverage / instrumentation
 coverage
 .nyc_output
