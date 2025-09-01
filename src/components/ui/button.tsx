@@ -1,33 +1,26 @@
-/* eslint-disable import/order */
-/**
- * UI/Button:
- * - Basic accessible button component with variant system (extend later).
- * - Demonstrates co-located styling & composition pattern.
- */
-import clsxFn from 'clsx';
+import React from "react";
 
-import { forwardRef } from 'react';
-import type { ButtonHTMLAttributes } from 'react';
+type ButtonProps = {
+  children: React.ReactNode;
+  onClick?: () => void;
+  type?: "button" | "submit";
+  className?: string;
+  ariaLabel?: string;
+};
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost';
-}
-
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant = 'primary', ...props },
-  ref
-) {
-  return (
-    <button
-      ref={ref}
-  className={clsxFn(
-        'inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 disabled:opacity-50',
-        variant === 'primary' && 'bg-brand text-white hover:bg-brand/90',
-        variant === 'secondary' && 'bg-neutral-200 hover:bg-neutral-300',
-        variant === 'ghost' && 'hover:bg-neutral-100',
-        className
-      )}
-      {...props}
-    />
-  );
-});
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  onClick,
+  type = "button",
+  className = "",
+  ariaLabel,
+}) => (
+  <button
+    type={type}
+    onClick={onClick}
+    className={`px-6 py-2 rounded-lg font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 ${className}`}
+    aria-label={ariaLabel}
+  >
+    {children}
+  </button>
+);
