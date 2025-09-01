@@ -72,12 +72,42 @@ npm run dev
 
 See `prisma/README_DB.md` for full database workflow details.
 
+### One-Command Bootstrap
+
+Cross-platform helper scripts in `scripts/` perform install, validate, generate, migrate, seed, then start dev.
+
+Usage examples:
+
+```bash
+# macOS/Linux (bash/zsh)
+./scripts/start.sh           # full cycle
+./scripts/start.sh --fast    # skip install/validate/migrate (just dev if already set up)
+./scripts/start.sh --no-seed # skip seeding
+
+# Windows PowerShell
+pwsh ./scripts/start.ps1
+pwsh ./scripts/start.ps1 -Fast -NoSeed
+
+# Windows cmd.exe
+scripts\\start.cmd
+scripts\\start.cmd --fast --no-seed
+```
+
+Flags:
+
+- `--fast` / `-Fast`: skip dependency install & prisma validation/migration.
+- `--no-seed` / `-NoSeed`: skip executing the idempotent seed.
+
+ 
 ## Prisma Model Notes
+
 - `Post.featherData` stores flexible JSON per feather type.
 - `renderedBody` caches transformation (markdown -> HTML) for faster listing & `read_more` truncation.
 - Future tables (rights, sitemap) can be appended incrementally without breaking existing layers.
 
+ 
 ## Next Steps (Suggested Roadmap)
+
 1. Implement authentication (Supabase Auth or NextAuth adapter with Prisma).
 2. Slug generation + validation (unique per post, fallback to cuid snippet).
 3. Markdown rendering pipeline with sanitization & syntax highlighting.
@@ -89,15 +119,21 @@ See `prisma/README_DB.md` for full database workflow details.
 9. Theme system (CSS variables per theme, runtime switcher).
 10. Sitemap & robots generation.
 
+ 
 ## Conventions
+
 - Path aliases use absolute imports from project root (`@/src/...`).
 - All cross-module consumption through each module's published exports (avoid deep linking into internal folders).
 - Server actions / route handlers encapsulate validation (zod) before calling application layer.
 
+ 
 ## Database & Migrations
+
 Database schema lives in `prisma/schema.prisma`; migration history is committed in `prisma/migrations/`. Use `npm run db:migrate` locally and `npm run db:deploy` in CI/production. Seed script: `prisma/seed.ts` (TypeScript only, idempotent baseline).
 
+ 
 ## License
+
 Pending (align with original Chyrp Lite license if derivative aspects apply; otherwise MIT recommended). Add a NOTICE if reusing assets.
 
 ---
