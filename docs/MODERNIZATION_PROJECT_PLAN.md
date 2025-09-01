@@ -28,7 +28,7 @@ Modernize Chyrp by re‑implementing its core philosophy (lightweight, extensibl
 
 ### 3. Scope Overview
 
-In Scope (Phased): Core CRUD for posts & users; Feathers (Text, Photo, Quote, Link, Video, Audio, Uploader); Essential Modules (Tags, Categories, Comments, Likes, Read More, Rights, Sitemap, Cacher, Lightbox, Highlighter, Easy Embed, Post Views, MathJax, Cascade (infinite scroll), Maptcha (spam defense)).
+In Scope (Phased): Core CRUD for posts & users; Feathers (Text, Photo, Quote, Link, Video, Audio, Uploader); Essential Modules (Tags, Categories, Comments, Likes, Read More, Rights, Sitemap, Cacher, Lightbox, Highlighter, Easy Embed, Post Views, MathJax, Cascade (infinite scroll), Maptcha (spam defense)). These map 1:1 to legacy Chyrp Lite capabilities to preserve functional parity.
 
 Deferred (Stretch): Webmentions (Mentionable), Multi‑tenant workspaces, GraphQL gateway, AI content assistant, Theme marketplace, Meilisearch integration.
 
@@ -58,7 +58,7 @@ Deployment Target: Vercel (front + API) + Supabase (DB/Auth/Storage/Edge Functio
 
 Entities: User, Session (implicit), Role, Permission, Post (polymorphic: Post + Feather subtype), Category, Tag, PostTag (join), Comment, Like, MediaAsset, PostView (aggregated), Setting (key/value), Extension (installed module), Theme, MigrationVersion, AuditLog.
 
-Polymorphism Strategy: Single `Post` table with `type` enum (TEXT|PHOTO|QUOTE|LINK|VIDEO|AUDIO|UPLOADER) + type‑specific JSON `payload` column (validated via Zod schemas) keeping base columns (id, userId, slug, title, body, createdAt, updatedAt, status, visibility, excerpt, metadata JSONB).
+Polymorphism Strategy: Single `Post` table with `type` enum (TEXT|PHOTO|QUOTE|LINK|VIDEO|AUDIO|UPLOADER) + type‑specific JSON `payload` column (validated via Zod schemas) keeping base columns (id, userId, slug, title, body, createdAt, updatedAt, status, visibility, excerpt, metadata JSONB). This reflects legacy "Feathers" while modernizing storage.
 
 ---
 
@@ -85,6 +85,15 @@ AuditLog(id, actorId, action, entityType, entityId, data JSONB, createdAt)
 
 Indexes: slugs unique; full‑text GIN index on Post(title, body, payload->>'text') for search (phase 2). Partial indexes for published posts. Foreign keys with cascade delete for dependent joins.
 
+Legacy Feature Parity Notes:
+
+- Rights / licensing: represented via future License metadata (can extend `Post` metadata or add `License` table as in current Prisma schema).
+- Uploader multi-file: handled via `MediaAsset` + join (or embedded order) similar to legacy Uploader Feather.
+- Read More: excerpt logic stored/cached in `excerpt` & optionally generated server-side matching legacy truncation.
+- Cacher: legacy page caching maps to renderedBody + external layer (edge/Redis) invalidated via events.
+- Sitemap: data sourced from `Post` publication metadata; incremental rebuild job retains legacy function.
+- Post Views: daily aggregation in `PostView` mirrors legacy simple counter with improved batching.
+
 ---
 
 ### 7. API Strategy
@@ -100,6 +109,8 @@ Auth: Supabase session tokens validated via middleware; role check utility `requ
 Rate Limiting: Lightweight in‑memory (development) then KV/Upstash (production) for anonymous endpoints (comments, likes).
 
 Versioning: Start with unversioned; add `Accept: application/vnd.neochyrp.v1+json` header pattern if needed later.
+
+Legacy Mapping: Replaces PHP front controller responses with structured JSON endpoints; ensures every legacy interactive feature (posting, commenting, liking, tagging, categorizing) has a REST counterpart accessible to future alternative clients.
 
 ---
 
@@ -121,6 +132,8 @@ export const feather = {
 
 Registry loads enabled Feathers on boot (compile‑time or dynamic import). Admin UI introspects `fields` to build creation forms automatically (schema‑driven forms). Validation done on both client and server.
 
+Legacy Parity: Each legacy Feather (text/photo/quote/link/video/audio/uploader) has a manifest ensuring identical user-facing intent (fields & rendering) while allowing richer validation and extensibility.
+
 ---
 
 ### 9. Module (Extension) System Design
@@ -135,6 +148,8 @@ Execution Order: Priority integer; stable sort. Failures isolated; logged to Aud
 
 Cache Invalidation Hooks: Modules can tag cache entries; on relevant events system invalidates tagged entries.
 
+Legacy Parity: Mirrors legacy module trigger system (PHP callbacks) through typed events; all legacy modules listed in Scope have equivalent modern modules with event subscriptions instead of ad-hoc globals.
+
 ---
 
 ### 10. Theming Strategy
@@ -148,6 +163,8 @@ theme = { name, version, templates: { post, list, page, notFound }, assetsDir }
 Route Layout Composition: Next.js layouts wrap core content; dynamic theme selection resolved at request (ISR per theme). CSS customization via Tailwind + theme tokens (CSS variables) injected in `:root`.
 
 Pluggable Template Parts: Provide slots (header, footer, sidebar) via React context & `composeSlots` helper.
+
+Legacy Parity: Themes retain ability to override layout & partials (Twig -> React components) while adding typed props and ISR friendliness.
 
 ---
 
@@ -164,6 +181,8 @@ Roles: ADMIN, AUTHOR, CONTRIBUTOR, MODERATOR, READER.
 | READER | like, comment (if permitted) |
 
 Policy Layer: Utility functions `can(user, action, resource)` with static matrix + extension hook for dynamic policies.
+
+Legacy Parity: Replicates legacy rights model (user levels & permissions) with explicit role + permission mapping and future extension hooks.
 
 ---
 
@@ -184,17 +203,19 @@ SEO: Structured data (JSON‑LD) for posts, OpenGraph & Twitter meta tags, Sitem
 
 Strategies:
 
-* ISR (Incremental Static Regeneration) for public post pages, list pages with revalidate triggers on publish/update.
-* Edge caching (Vercel) for GET routes with appropriate `Cache-Control` & SWR.
-* Application Cache: In‑memory LRU (dev) -> Redis/Upstash (prod) keyed by resource and tag.
-* Post View Counting: Write‑through buffered (increment in Redis; batch flush job every minute).
-* Asset Optimization: Image resizing via Next Image + Supabase Storage origin.
+- ISR (Incremental Static Regeneration) for public post pages, list pages with revalidate triggers on publish/update.
+- Edge caching (Vercel) for GET routes with appropriate `Cache-Control` & SWR.
+- Application Cache: In‑memory LRU (dev) -> Redis/Upstash (prod) keyed by resource and tag.
+- Post View Counting: Write‑through buffered (increment in Redis; batch flush job every minute).
+- Asset Optimization: Image resizing via Next Image + Supabase Storage origin.
 
 ---
 
 ### 15. Media Storage & Processing
 
 Direct uploads (client -> Supabase signed URL). Store metadata in `MediaAsset`. Post‑upload processing: dimension extraction, optional transcoding (video/audio – stretch). Lightbox module consumes processed variants.
+
+Legacy Parity: Preserves ability to upload single or multiple files (Uploader Feather) & display via Lightbox while adding secure storage and optional processing.
 
 ---
 
@@ -208,15 +229,17 @@ Initial: Postgres full‑text (tsvector). Optional enhancement: Meilisearch inte
 
 Checklist:
 
-* Input validation (Zod schemas server‑side)
-* Output escaping (React auto + explicit sanitization for Markdown via `rehype-sanitize`)
-* CSRF: Use same‑site cookies; stateful mutations via POST only; optionally CSRF token for admin forms.
-* AuthZ guard on all mutations.
-* Rate limiting on comments, likes, auth endpoints.
-* Markdown / embed sanitization to prevent XSS.
-* Content Security Policy headers.
-* Secure media URLs (signed) for private assets (if introduced).
-* Audit logging of admin actions.
+- Input validation (Zod schemas server‑side)
+- Output escaping (React auto + explicit sanitization for Markdown via `rehype-sanitize`)
+- CSRF: Use same‑site cookies; stateful mutations via POST only; optionally CSRF token for admin forms.
+- AuthZ guard on all mutations.
+- Rate limiting on comments, likes, auth endpoints.
+- Markdown / embed sanitization to prevent XSS.
+- Content Security Policy headers.
+- Secure media URLs (signed) for private assets (if introduced).
+- Audit logging of admin actions.
+
+Legacy Improvements: Strengthens legacy baseline (which relied on server config + PHP filtering) by enforcing schema validation, CSP, rate limiting, and structured audit logs.
 
 ---
 
@@ -231,10 +254,10 @@ Storybook (optional) for UI primitives. Path based module boundaries (`/src/core
 
 Levels:
 
-* Unit: Zod schemas, utility functions, RBAC policies.
-* Integration: API route handlers with in‑memory / test Postgres (Supabase test project or Docker).
-* E2E: Playwright for critical flows (create post, comment, like, sitemap presence).
-* Accessibility snapshots: axe-core integration in Playwright.
+- Unit: Zod schemas, utility functions, RBAC policies.
+- Integration: API route handlers with in‑memory / test Postgres (Supabase test project or Docker).
+- E2E: Playwright for critical flows (create post, comment, like, sitemap presence).
+- Accessibility snapshots: axe-core integration in Playwright.
 
 Coverage Targets: ≥ 70% statements core; critical paths (auth, publish, comment) 100% branch.
 
@@ -252,6 +275,8 @@ Legacy Chyrp DB (MySQL) mapping script:
 
 Rollback Plan: Keep original dump; idempotent import (upsert by legacy id stored in metadata).
 
+Feature Fidelity Validation: Migration script includes verification that counts by Feather type, tag assignments, category membership, comment threading depth, and view counts match legacy (within expected normalization adjustments). Slug collisions resolved deterministically with suffixing while preserving original canonical slug in metadata for redirects.
+
 ---
 
 ### 21. Deployment & DevOps
@@ -259,11 +284,11 @@ Rollback Plan: Keep original dump; idempotent import (upsert by legacy id stored
 Environments: `dev` (local), `preview` (PR builds), `prod` (main). Each with distinct Supabase project or isolated schema.
 CI (GitHub Actions):
 
-* Install deps, lint, typecheck
-* Run Prisma migrate diff
-* Run tests (unit + integration)
-* Build
-* Upload coverage + Lighthouse CI (optional)
+- Install deps, lint, typecheck
+- Run Prisma migrate diff
+- Run tests (unit + integration)
+- Build
+- Upload coverage + Lighthouse CI (optional)
 CD: Vercel auto deployments on push; production promotion on main branch tests green.
 Cron Jobs: Vercel / Supabase Edge: sitemap refresh nightly, post view flush every minute.
 
@@ -291,6 +316,8 @@ Tracing: OpenTelemetry instrumentation (optional if time allows).
 
 Critical Path: Auth → Post model → Feathers registry → Module events → Theming → Comments → Caching → Migration.
 
+Legacy Parity Gate: Completion of Week 3 marks full replacement coverage of all legacy core Feathers + priority Modules enabling a switchover trial.
+
 ---
 
 ### 24. Risk Register
@@ -307,10 +334,10 @@ Critical Path: Auth → Post model → Feathers registry → Module events → T
 
 ### 25. Innovation (Bonus) Ideas
 
-* AI content assistant (title & excerpt suggestions using local or hosted model API).
-* Realtime collaborative editing (Supabase realtime) for drafts.
-* Reader personalization: follow tags & personalized feed ranking.
-* Webhooks for external automations.
+- AI content assistant (title & excerpt suggestions using local or hosted model API).
+- Realtime collaborative editing (Supabase realtime) for drafts.
+- Reader personalization: follow tags & personalized feed ranking.
+- Webhooks for external automations.
 
 ---
 
@@ -318,12 +345,12 @@ Critical Path: Auth → Post model → Feathers registry → Module events → T
 
 Artifacts:
 
-* README (root) – quick start, architecture diagram.
-* `/docs/ARCHITECTURE.md` (already) – keep updated with changes.
-* `/docs/API_REFERENCE.md` – generated from route metadata.
-* `/docs/EXTENSION_GUIDE.md` – how to build a Module / Feather.
-* `/docs/MIGRATION_GUIDE.md` – legacy import instructions.
-* `/docs/SECURITY.md` – threat model & mitigations.
+- README (root) – quick start, architecture diagram.
+- `/docs/ARCHITECTURE.md` (already) – keep updated with changes.
+- `/docs/API_REFERENCE.md` – generated from route metadata.
+- `/docs/EXTENSION_GUIDE.md` – how to build a Module / Feather.
+- `/docs/MIGRATION_GUIDE.md` – legacy import instructions.
+- `/docs/SECURITY.md` – threat model & mitigations.
 
 ---
 
@@ -343,98 +370,99 @@ Artifacts:
 
 Foundations:
 
-* [ ] Finalize Prisma schema & run initial migration
-* [ ] Supabase auth wiring & session context provider
-* [ ] RBAC utility + role constants
-* [ ] Post CRUD API + Text Feather
-* [ ] Generic list + detail page with ISR
-* [ ] Markdown rendering pipeline (remark/rehype sanitize)
+- [ ] Finalize Prisma schema & run initial migration
+- [ ] Supabase auth wiring & session context provider
+- [ ] RBAC utility + role constants
+- [ ] Post CRUD API + Text Feather (legacy Text)
+- [ ] Generic list + detail page with ISR
+- [ ] Markdown rendering pipeline (remark/rehype sanitize)
 
 Feathers & Media:
 
-* [ ] Photo Feather (upload + metadata)
-* [ ] Quote Feather
-* [ ] Link Feather (oEmbed fetch in Easy Embed module later)
-* [ ] Video Feather (basic; transcoding deferred)
-* [ ] Audio Feather
-* [ ] Uploader Feather (multi file association)
+- [ ] Photo Feather (legacy Photo)
+- [ ] Quote Feather (legacy Quote)
+- [ ] Link Feather (legacy Link) + oEmbed integration (Easy Embed)
+- [ ] Video Feather (legacy Video; transcoding deferred)
+- [ ] Audio Feather (legacy Audio)
+- [ ] Uploader Feather (legacy Uploader multi-file)
 
 Modules (Phase 2 ordering):
 
-* [ ] Tags + Tag API
-* [ ] Categories
-* [ ] Comments (threaded, moderation status)
-* [ ] Likes (idempotent per user)
-* [ ] Read More (excerpt logic + UI)
-* [ ] Rights (license metadata + display)
-* [ ] Highlighter (Prism or Highlight.js)
-* [ ] Easy Embed (oEmbed provider fetch + whitelist)
-* [ ] Post Views (increment + batch flush)
-* [ ] Cacher (cache service + event invalidation)
-* [ ] Lightbox (client component + sanitized image sources)
-* [ ] Sitemap (XML generation + cron refresh)
-* [ ] Cascade (infinite scroll feed API cursor)
-* [ ] MathJax module (conditional asset load)
-* [ ] Maptcha (math captcha for anonymous comments)
+- [ ] Tags + Tag API (legacy Tags)
+- [ ] Categories (legacy Categorize)
+- [ ] Comments (threaded, moderation status) (legacy Comments)
+- [ ] Likes (idempotent per user) (legacy Likes)
+- [ ] Read More (excerpt logic + UI) (legacy Read More)
+- [ ] Rights (license metadata + display) (legacy Rights)
+- [ ] Highlighter (Prism or Highlight.js) (legacy Highlighter)
+- [ ] Easy Embed (oEmbed provider fetch + whitelist) (legacy Easy Embed)
+- [ ] Post Views (increment + batch flush) (legacy Post Views)
+- [ ] Cacher (cache service + event invalidation) (legacy Cacher)
+- [ ] Lightbox (client component + sanitized image sources) (legacy Lightbox)
+- [ ] Sitemap (XML generation + cron refresh) (legacy Sitemap)
+- [ ] Cascade (infinite scroll feed API cursor) (legacy Cascade)
+- [ ] MathJax module (conditional asset load) (legacy MathJax)
+- [ ] Maptcha (math captcha for anonymous comments) (legacy MAPTCHA)
 
 Extensibility & Theming:
 
-* [ ] Event bus abstraction
-* [ ] Module manifest + loader
-* [ ] Feather manifest + registry
-* [ ] Theme interface + default theme extraction
-* [ ] Theme switch admin UI
+- [ ] Event bus abstraction
+- [ ] Module manifest + loader
+- [ ] Feather manifest + registry
+- [ ] Theme interface + default theme extraction (seed with parity to a legacy theme aesthetic)
+- [ ] Theme switch admin UI
 
 Operational:
 
-* [ ] Logging middleware
-* [ ] Error boundary & unified API error format
-* [ ] Rate limiter
-* [ ] Sitemap cron job
-* [ ] View aggregation worker
+- [ ] Logging middleware
+- [ ] Error boundary & unified API error format
+- [ ] Rate limiter
+- [ ] Sitemap cron job
+- [ ] View aggregation worker
 
 Migration & Docs:
 
-* [ ] Legacy schema reverse engineering notes
-* [ ] Import script (users, posts, tags, categories, comments)
-* [ ] Media migration tool
-* [ ] Validation & verification script
-* [ ] API reference generation script
+- [ ] Legacy schema reverse engineering notes
+- [ ] Import script (users, posts, tags, categories, comments, view counts if present)
+- [ ] Media migration tool
+- [ ] Validation & verification script
+- [ ] API reference generation script
 
 Testing / Quality:
 
-* [ ] Playwright base setup
-* [ ] Axe accessibility integration
-* [ ] Unit tests for RBAC & Feathers validation
-* [ ] Integration tests for Post & Comment APIs
+- [ ] Playwright base setup
+- [ ] Axe accessibility integration
+- [ ] Unit tests for RBAC & Feathers validation
+- [ ] Integration tests for Post & Comment APIs
 
 Polish:
 
-* [ ] SEO structured data helper
-* [ ] OpenGraph image generator (dynamic, optional)
-* [ ] Lighthouse automation in CI
+- [ ] SEO structured data helper
+- [ ] OpenGraph image generator (dynamic, optional)
+- [ ] Lighthouse automation in CI
 
 Stretch / Innovation:
 
-* [ ] AI excerpt/title suggestion endpoint
-* [ ] Realtime draft presence
-* [ ] Meilisearch indexing pipeline
+- [ ] AI excerpt/title suggestion endpoint
+- [ ] Realtime draft presence
+- [ ] Meilisearch indexing pipeline (supersedes legacy basic search capability)
 
 ---
 
 ### 29. Glossary
 
-* Feather: Content type definition bundling schema + rendering logic.
-* Module: Behavioral extension responding to events or augmenting UI.
-* ISR: Incremental Static Regeneration (Next.js revalidate mechanism).
-* RBAC: Role Based Access Control.
-* Payload: Feather specific JSON data stored per post.
+- Feather: Content type definition bundling schema + rendering logic.
+- Module: Behavioral extension responding to events or augmenting UI.
+- ISR: Incremental Static Regeneration (Next.js revalidate mechanism).
+- RBAC: Role Based Access Control.
+- Payload: Feather specific JSON data stored per post.
+- Legacy Parity: Guarantee that for every legacy module/feather there is an equivalent modern implementation delivering the same user-facing outcome.
 
 ---
 
 ### 30. Summary
 
-This plan phases delivery from a stable core to rich extensibility while aligning with judging criteria: rapid setup, complete feature parity, robustness, idiomatic Next.js + TypeScript implementation, and thorough documentation. The modular abstraction enables sustainable growth beyond the hackathon (search, AI, realtime) without compromising the lean core.
+This plan phases delivery from a stable core to rich extensibility while aligning with judging criteria: rapid setup, complete feature parity with legacy Chyrp Lite (Feathers + Modules), robustness, idiomatic Next.js + TypeScript implementation, and thorough documentation. The modular abstraction enables sustainable growth beyond the hackathon (search, AI, realtime) without compromising the lean core.
 
 ---
 End of document.
