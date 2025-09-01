@@ -47,7 +47,7 @@ Each module (e.g., content, comments, likes) contains:
 The original PHP codebase (`chyrp-lite-2025.02/`) remains for reference only. New implementation avoids porting line-by-line and instead re-expresses concepts with modern primitives.
 
 ## Environment Setup
-1. Copy `.env.example` to `.env.local` and fill values (use Supabase project).
+1. Copy `.env.example` to `.env` and fill values (use Supabase project).
 2. Install dependencies and run migrations.
 
 ### Commands
