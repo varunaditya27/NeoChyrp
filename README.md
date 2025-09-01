@@ -47,15 +47,30 @@ Each module (e.g., content, comments, likes) contains:
 The original PHP codebase (`chyrp-lite-2025.02/`) remains for reference only. New implementation avoids porting line-by-line and instead re-expresses concepts with modern primitives.
 
 ## Environment Setup
-1. Copy `.env.example` to `.env.local` and fill values (use Supabase project).
+1. Copy `.env.example` to `.env` and fill values (Supabase project credentials, DB URLs).
 2. Install dependencies and run migrations.
+3. Seed baseline data (owner user, permissions, welcome post).
 
-### Commands
+### Core Commands
 ```bash
+# install deps
 npm install
-npx prisma migrate dev --name init
+
+# validate & generate Prisma client
+npm run prisma:validate
+npm run prisma:generate
+
+# create/apply dev migration (writes to prisma/migrations)
+npm run db:migrate
+
+# seed baseline data (idempotent)
+npm run db:seed
+
+# start dev server
 npm run dev
 ```
+
+See `prisma/README_DB.md` for full database workflow details.
 
 ## Prisma Model Notes
 - `Post.featherData` stores flexible JSON per feather type.
@@ -79,8 +94,11 @@ npm run dev
 - All cross-module consumption through each module's published exports (avoid deep linking into internal folders).
 - Server actions / route handlers encapsulate validation (zod) before calling application layer.
 
+## Database & Migrations
+Database schema lives in `prisma/schema.prisma`; migration history is committed in `prisma/migrations/`. Use `npm run db:migrate` locally and `npm run db:deploy` in CI/production. Seed script: `prisma/seed.ts` (TypeScript only, idempotent baseline).
+
 ## License
-Pending (align with original Chyrp Lite license if derivative aspects apply; otherwise MIT recommended). Add NOTICE if reusing assets.
+Pending (align with original Chyrp Lite license if derivative aspects apply; otherwise MIT recommended). Add a NOTICE if reusing assets.
 
 ---
 Scaffold only: Implementation details intentionally stubbed with comments to guide development.

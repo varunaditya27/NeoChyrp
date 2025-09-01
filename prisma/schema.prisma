@@ -1,7 +1,4 @@
-/// Prisma data model for NeoChyrp.
-/// Notes:
-/// - Keep models lean; derived/denormalized data should be materialized via views or caching later.
-/// - Avoid premature relations for modules you haven't implemented yet; mark with TODO comments.
+// NeoChyrp Prisma schema (PostgreSQL)
 
 generator client {
   provider = "prisma-client-js"
@@ -10,22 +7,27 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-/// Core user accounts. Authentication mediated through Supabase Auth (id matches auth.uid) or NextAuth adapter.
+/* ---------------- User & Auth ---------------- */
+
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  username      String    @unique
-  displayName   String
-  bio           String?   @db.Text
-  avatarUrl     String?   @db.Text
-  role          UserRole  @default(USER)
-  posts         Post[]
-  comments      Comment[]
-  likes         Like[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          String     @id @default(cuid())
+  email       String     @unique
+  username    String     @unique
+  displayName String
+  bio         String?    @db.Text
+  avatarUrl   String?
+  role        UserRole   @default(USER)
+  posts       Post[]
+  pages       Page[]
+  comments    Comment[]
+  likes       Like[]
+  assets      Asset[]
+  groups      UserGroup[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 enum UserRole {
@@ -36,30 +38,36 @@ enum UserRole {
   OWNER
 }
 
-/// Generic Post record; specific Feather types supply specialized data via discriminated union approach (type + json). 
+/* ---------------- Content: Posts & Pages ---------------- */
+
 model Post {
-  id            String          @id @default(cuid())
-  slug          String          @unique
-  title         String?
-  authorId      String
-  author        User            @relation(fields: [authorId], references: [id])
-  body          String?         @db.Text // Raw (markdown, html, etc.)
-  renderedBody  String?         @db.Text // Cached rendered HTML (for performance + read_more truncation)
-  excerpt       String?         @db.Text
-  feather       FeatherType     // Equivalent to legacy feathers (text, photo, etc.)
-  featherData   Json?           // Structured metadata: e.g. image urls, quote source, link target.
-  visibility    PostVisibility  @default(PUBLISHED)
-  publishedAt   DateTime?       // Null until published
-  tags          PostTag[]
-  categories    PostCategory[]
-  comments      Comment[]
-  likes         Like[]
-  views         PostView[]
-  mentions      WebMention[]
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id           String          @id @default(cuid())
+  slug         String          @unique
+  title        String?
+  authorId     String
+  author       User            @relation(fields: [authorId], references: [id])
+  body         String?         @db.Text
+  renderedBody String?         @db.Text
+  excerpt      String?         @db.Text
+  feather      FeatherType
+  featherData  Json?
+  visibility   PostVisibility  @default(PUBLISHED)
+  publishedAt  DateTime?
+  tags         PostTag[]
+  categories   PostCategory[]
+  comments     Comment[]
+  likes        Like[]
+  views        PostView[]
+  mentions     WebMention[]
+  metas        PostMeta[]
+  assets       PostAsset[]
+  licenses     PostLicense[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
   @@index([feather])
   @@index([publishedAt])
+  @@index([authorId, publishedAt])
 }
 
 enum FeatherType {
@@ -80,6 +88,38 @@ enum PostVisibility {
   ARCHIVED
 }
 
+model Page {
+  id           String          @id @default(cuid())
+  slug         String          @unique
+  title        String
+  body         String          @db.Text
+  renderedBody String?         @db.Text
+  excerpt      String?         @db.Text
+  authorId     String
+  author       User            @relation(fields: [authorId], references: [id])
+  parentId     String?
+  parent       Page?           @relation("PageToPage", fields: [parentId], references: [id])
+  children     Page[]          @relation("PageToPage")
+  visibility   PageVisibility  @default(PUBLISHED)
+  publishedAt  DateTime?
+  order        Int             @default(0)
+  metas        PageMeta[]
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([publishedAt])
+  @@index([parentId, order])
+}
+
+enum PageVisibility {
+  DRAFT
+  PUBLISHED
+  PRIVATE
+  ARCHIVED
+}
+
+/* ---------------- Taxonomy ---------------- */
+
 model Tag {
   id        String    @id @default(cuid())
   name      String    @unique
@@ -91,20 +131,22 @@ model Tag {
 model PostTag {
   postId String
   tagId  String
-  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
   @@id([postId, tagId])
 }
 
 model Category {
-  id        String          @id @default(cuid())
-  name      String          @unique
-  slug      String          @unique
-  parentId  String?         // Optional nested categories (simple hierarchy)
-  children  Category[]      @relation("CategoryToCategory")
-  parent    Category?       @relation("CategoryToCategory", fields: [parentId], references: [id])
+  id        String        @id @default(cuid())
+  name      String        @unique
+  slug      String        @unique
+  parentId  String?
+  children  Category[]    @relation("CategoryToCategory")
+  parent    Category?     @relation("CategoryToCategory", fields: [parentId], references: [id])
   posts     PostCategory[]
-  createdAt DateTime        @default(now())
+  createdAt DateTime      @default(now())
+
+  @@index([parentId])
 }
 
 model PostCategory {
@@ -115,22 +157,26 @@ model PostCategory {
   @@id([postId, categoryId])
 }
 
+/* ---------------- Comments & Reactions ---------------- */
+
 model Comment {
-  id        String      @id @default(cuid())
+  id        String         @id @default(cuid())
   postId    String
-  post      Post        @relation(fields: [postId], references: [id], onDelete: Cascade)
+  post      Post           @relation(fields: [postId], references: [id], onDelete: Cascade)
   authorId  String?
-  author    User?       @relation(fields: [authorId], references: [id])
+  author    User?          @relation(fields: [authorId], references: [id])
   guestName String?
   guestUrl  String?
-  body      String      @db.Text
-  status    CommentStatus @default(PENDING)
+  body      String         @db.Text
+  status    CommentStatus  @default(PENDING)
   parentId  String?
-  children  Comment[]   @relation("CommentToComment")
-  parent    Comment?    @relation("CommentToComment", fields: [parentId], references: [id])
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  children  Comment[]      @relation("CommentToComment")
+  parent    Comment?       @relation("CommentToComment", fields: [parentId], references: [id])
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
   @@index([postId])
+  @@index([status, postId])
 }
 
 enum CommentStatus {
@@ -141,35 +187,218 @@ enum CommentStatus {
 }
 
 model Like {
-  userId String
-  postId String
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  postId    String
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post      Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   @@id([userId, postId])
+  @@index([postId])
 }
 
 model PostView {
   id        String   @id @default(cuid())
   postId    String
   post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  ipHash    String   // hashed IP for privacy-friendly unique-ish counting
+  ipHash    String
   userAgent String?
   createdAt DateTime  @default(now())
   @@index([postId])
+  @@index([postId, ipHash])
 }
+
+/* ---------------- Web & Federation ---------------- */
 
 model WebMention {
-  id          String   @id @default(cuid())
-  sourceUrl   String
-  targetUrl   String
-  postId      String?
-  post        Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  type        String?  // like, reply, repost, etc.
-  rawPayload  Json?
-  createdAt   DateTime @default(now())
-  verifiedAt  DateTime?
+  id         String   @id @default(cuid())
+  sourceUrl  String
+  targetUrl  String
+  postId     String?
+  post       Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  type       String?
+  rawPayload Json?
+  createdAt  DateTime @default(now())
+  verifiedAt DateTime?
   @@index([postId])
+  @@index([targetUrl])
 }
 
-// Future: Rights, Attribution, Sitemap records, MathJax cache, Cacher metadata tables etc.
+/* ---------------- Meta / Extensibility ---------------- */
+
+model PostMeta {
+  id     String @id @default(cuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  key    String
+  value  Json?
+  @@unique([postId, key])
+}
+
+model PageMeta {
+  id     String @id @default(cuid())
+  pageId String
+  page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  key    String
+  value  Json?
+  @@unique([pageId, key])
+}
+
+model Setting {
+  key       String   @id
+  value     Json?
+  updatedAt DateTime  @updatedAt
+}
+
+/* ---------------- Assets & Media ---------------- */
+
+model Asset {
+  id          String     @id @default(cuid())
+  ownerId     String?
+  owner       User?      @relation(fields: [ownerId], references: [id])
+  type        AssetType
+  mimeType    String
+  size        Int
+  width       Int?
+  height      Int?
+  durationMs  Int?
+  checksum    String?    @unique
+  storagePath String
+  url         String
+  metadata    Json?
+  posts       PostAsset[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([type])
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+}
+
+model PostAsset {
+  postId  String
+  assetId String
+  order   Int    @default(0)
+  post    Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  asset   Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  @@id([postId, assetId])
+  @@index([assetId])
+  @@index([postId, order])
+}
+
+/* ---------------- Licensing ---------------- */
+
+model License {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  url         String?
+  description String?       @db.Text
+  posts       PostLicense[]
+  createdAt   DateTime      @default(now())
+}
+
+model PostLicense {
+  postId              String
+  licenseId           String
+  post                Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  license             License @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+  attributionOverride String? @db.Text
+  @@id([postId, licenseId])
+}
+
+/* ---------------- Permissions (Fine-grained) ---------------- */
+
+model Group {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?          @db.Text
+  users       UserGroup[]
+  permissions GroupPermission[]
+  createdAt   DateTime         @default(now())
+}
+
+model Permission {
+  id          String            @id @default(cuid())
+  key         String            @unique
+  description String?           @db.Text
+  groups      GroupPermission[]
+}
+
+model GroupPermission {
+  groupId      String
+  permissionId String
+  group        Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  permission   Permission  @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([groupId, permissionId])
+}
+
+model UserGroup {
+  userId  String
+  groupId String
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group   Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  @@id([userId, groupId])
+}
+
+/* ---------------- External Embed Cache ---------------- */
+
+model OEmbedCache {
+  id           String   @id @default(cuid())
+  originalUrl  String   @unique
+  provider     String?
+  type         String?
+  title        String?
+  authorName   String?
+  html         String?  @db.Text
+  width        Int?
+  height       Int?
+  thumbnailUrl String?
+  raw          Json?
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([expiresAt])
+}
+
+/* ---------------- CAPTCHA ---------------- */
+
+model CaptchaChallenge {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  question   String
+  answerHash String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  consumedAt DateTime?
+  ipHash     String?
+  @@index([expiresAt])
+  @@index([token])
+}
+
+/* ---------------- Generic Cache ---------------- */
+
+model CacheEntry {
+  key       String   @id
+  scope     String?
+  value     Json?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  @@index([expiresAt])
+  @@index([scope])
+}
+
+/* ---------------- Sitemap State ---------------- */
+
+model SitemapState {
+  id              Int      @id @default(1)
+  lastGeneratedAt DateTime?
+  pending         Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+}
+
+/* ---------------- END ---------------- */
