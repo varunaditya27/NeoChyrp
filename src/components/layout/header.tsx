@@ -29,19 +29,17 @@ const Header: React.FC = () => {
 
   return (
     <header className="w-full border-b bg-white/70 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-8">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="font-semibold text-brand">NeoChyrp</Link>
-            <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">alpha</span>
-          </div>
-          <nav className="hidden gap-6 text-sm md:flex">
-            <Link href="/blog" className="text-gray-600 hover:text-gray-900">Blog</Link>
-            <Link href="/tags" className="text-gray-600 hover:text-gray-900">Tags</Link>
-            <Link href="/categories" className="text-gray-600 hover:text-gray-900">Categories</Link>
-            <Link href="/dashboard" className="font-medium text-gray-700 hover:text-gray-900">Dashboard</Link>
-          </nav>
+      <div className="mx-auto flex w-full max-w-5xl items-center gap-8 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Link href="/" className="font-semibold text-brand">NeoChyrp</Link>
+          <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">alpha</span>
         </div>
+        <nav className="ml-auto hidden gap-6 text-sm md:flex">
+          <Link href="/blog" className="text-gray-600 hover:text-gray-900">Blog</Link>
+          <Link href="/tags" className="text-gray-600 hover:text-gray-900">Tags</Link>
+          <Link href="/categories" className="text-gray-600 hover:text-gray-900">Categories</Link>
+          <Link href="/dashboard" className="font-medium text-gray-700 hover:text-gray-900">Dashboard</Link>
+        </nav>
         <div className="relative flex items-center gap-4" ref={menuRef}>
           {loading && (
             <div className="h-8 w-24 animate-pulse rounded bg-gray-200" aria-label="Loading session" />
