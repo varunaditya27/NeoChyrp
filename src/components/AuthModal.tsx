@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useAuth } from "@/src/lib/auth/session";
 import { Button } from "./ui/button";
 
 type AuthMode = "login" | "register";
@@ -11,6 +12,7 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ open, mode, onClose }) => {
+  const { signInWithGoogle, user, signOut } = useAuth();
   const [form, setForm] = useState({
     username: "",
     password: "",
@@ -36,6 +38,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode, onClose }) => {
         <h2 className="text-2xl font-bold mb-6 text-center">
           {mode === "login" ? "Login" : "Register"}
         </h2>
+        {user && (
+          <div className="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded p-2" role="status">
+            Signed in as {user.email || user.id}
+            <Button type="button" onClick={signOut} className="ml-2 bg-red-100 text-red-700 hover:bg-red-200">
+              Sign out
+            </Button>
+          </div>
+        )}
+        {!user && (
+          <Button type="button" onClick={signInWithGoogle} className="w-full mb-4 flex items-center justify-center gap-2">
+            <span>Continue with Google</span>
+          </Button>
+        )}
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <input
             type="text"
@@ -81,7 +96,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ open, mode, onClose }) => {
               />
             </>
           )}
-          <Button type="submit">{mode === "login" ? "Login" : "Register"}</Button>
+          <Button type="submit" disabled={!!user}>
+            {user ? "Already signed in" : mode === "login" ? "Login" : "Register"}
+          </Button>
           <Button type="button" onClick={onClose} className="bg-gray-200 text-gray-700 mt-2">
             Cancel
           </Button>
