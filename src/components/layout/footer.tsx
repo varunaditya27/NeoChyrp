@@ -1,13 +1,8 @@
-/**
- * Site Footer:
- * - Basic metadata + attribution; extend with sitemap links later.
- */
-export function Footer() {
-  return (
-    <footer className="mt-12 border-t py-8 text-center text-xs text-neutral-500">
-      <p>
-        © {new Date().getFullYear()} NeoChyrp · Modern remake of the classic Chyrp engine.
-      </p>
-    </footer>
-  );
-}
+import React from "react";
+
+export const Footer: React.FC = () => (
+  <footer className="w-full py-6 bg-gray-100 text-center text-gray-500 text-sm">
+    &copy; {new Date().getFullYear()} NeoChyrp. Inspired by Chyrp Lite. All rights reserved.
+  </footer>
+);
+export default Footer;
