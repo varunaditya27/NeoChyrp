@@ -9,22 +9,26 @@ Modern, modular reimplementation of the classic Chyrp blogging engine using:
 - Supabase (Auth, DB hosting, optional storage & realtime)
 
 ## Vision
+
 Recreate Chyrp's lightweight, feather-based extensibility with a contemporary stack that embraces:
+
 1. Composability (feature modules encapsulate their domain)
 2. Performance (server components, edge-friendly APIs later)
 3. Extensibility (clear domain boundaries + event-driven modules)
 4. Developer ergonomics (type safety, consistent conventions)
 
 ## High-Level Feature Mapping
+
 | Legacy Concept | Modern Equivalent |
 |----------------|------------------|
 | Feathers (text/photo/etc.) | `FeatherType` enum + `featherData` JSON + discriminated union types |
 | Modules (comments, likes) | Dedicated module directories with domain/application layers |
 | Themes | Tailwind + theming tokens + future theme pack directory |
-| Caching | Layered: rendered HTML cache field + future Redis/edge cache | 
+| Caching | Layered: rendered HTML cache field + future Redis/edge cache |
 
 ## Directory Structure
-```
+
+```text
 neo-chyrp-app/
   prisma/            # Database schema + migrations + seed
   src/
@@ -36,7 +40,9 @@ neo-chyrp-app/
 ```
 
 ### Modules Pattern
+
 Each module (e.g., content, comments, likes) contains:
+
 - `domain/` entities, value objects, events
 - `application/` commands & queries orchestrating domain logic
 - `infrastructure/` persistence and external service adapters
@@ -44,14 +50,17 @@ Each module (e.g., content, comments, likes) contains:
 - `api/` optional route handlers (colocated when feature-specific)
 
 ### Removing Legacy Coupling
+
 The original PHP codebase (`chyrp-lite-2025.02/`) remains for reference only. New implementation avoids porting line-by-line and instead re-expresses concepts with modern primitives.
 
 ## Environment Setup
+
 1. Copy `.env.example` to `.env` and fill values (Supabase project credentials, DB URLs).
 2. Install dependencies and run migrations.
 3. Seed baseline data (owner user, permissions, welcome post).
 
 ### Core Commands
+
 ```bash
 # install deps
 npm install
@@ -97,6 +106,23 @@ Flags:
 
 - `--fast` / `-Fast`: skip dependency install & prisma validation/migration.
 - `--no-seed` / `-NoSeed`: skip executing the idempotent seed.
+
+### Authentication (Supabase Google OAuth)
+
+Google sign-in is enabled through Supabase OAuth. Ensure in the Supabase dashboard you have:
+
+- Enabled Google provider with Client ID/Secret.
+- Added authorized redirect: `https://<your-dev-host>/*` (Supabase handles the return to the origin automatically).
+
+Environment variables required (already in `.env.example`):
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only operations, never exposed client-side)
+
+UI: The landing page auth modal shows a "Continue with Google" button. After successful sign-in, session state is managed by the Supabase JS client via `AuthProvider`.
+
+User Sync: A background call to `POST /api/auth/sync` persists the Supabase user into the Prisma `User` table (first user becomes OWNER; others USER). The endpoint is idempotent and updates displayName if it changes at the provider.
 
  
 ## Prisma Model Notes
