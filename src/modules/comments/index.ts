@@ -236,26 +236,15 @@ registerModule({
     console.log('[Comments] Module activated');
 
     // Subscribe to post deletion events
-    eventBus.subscribe(CoreEvents.PostDeleted, async (payload) => {
-      const { postId } = payload as { postId: string };
+    eventBus.on(CoreEvents.PostDeleted, async (payload: any) => {
+      const { postId } = payload || {};
       console.log('[Comments] Cleaning up comments for deleted post:', postId);
       await prisma.comment.deleteMany({
         where: { postId },
       });
     });
 
-    // Subscribe to user deletion events
-    eventBus.subscribe(CoreEvents.UserDeleted, async (payload) => {
-      const { email } = payload as { email: string };
-      console.log('[Comments] Anonymizing comments for deleted user:', email);
-      await prisma.comment.updateMany({
-        where: { guestName: email }, // Using guestName since the schema doesn't have authorEmail
-        data: {
-          guestName: '[Deleted User]',
-          guestUrl: null,
-        },
-      });
-    });
+  // (User deletion event not implemented in CoreEvents yet; anonymization hook skipped)
   },
 
   async deactivate() {

@@ -230,29 +230,29 @@ registerModule({
     console.log('[Likes] Module activated');
 
     // Subscribe to post/comment deletion events
-    eventBus.subscribe(CoreEvents.PostDeleted, async (payload) => {
-      const { postId } = payload as { postId: string };
+    eventBus.on(CoreEvents.PostDeleted, async (payload: any) => {
+      const { postId } = payload || {};
       console.log('[Likes] Cleaning up likes for deleted post:', postId);
       await prisma.like.deleteMany({
         where: { postId },
       });
     });
 
-    eventBus.subscribe(CoreEvents.CommentDeleted, async () => {
+  eventBus.on(CoreEvents.CommentDeleted, async () => {
       // Comments don't have likes in this implementation
     });
 
     // Update post popularity on like events
-    eventBus.subscribe(CoreEvents.LikeAdded, async (payload) => {
-      const { postId } = payload as { postId?: string };
+    eventBus.on(CoreEvents.LikeAdded, async (payload: any) => {
+      const { postId } = payload || {};
       if (postId) {
         console.log('[Likes] Updating popularity for post:', postId);
         // Could implement popularity scoring algorithm here
       }
     });
 
-    eventBus.subscribe(CoreEvents.LikeRemoved, async (payload) => {
-      const { postId } = payload as { postId?: string };
+    eventBus.on(CoreEvents.LikeRemoved, async (payload: any) => {
+      const { postId } = payload || {};
       if (postId) {
         console.log('[Likes] Updating popularity for post:', postId);
         // Could implement popularity scoring algorithm here
