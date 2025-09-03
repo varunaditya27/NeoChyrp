@@ -3,11 +3,11 @@
  * Shows posts associated with a specific tag
  */
 
-import { Suspense } from 'react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
-import { tagService } from '@/src/modules/tags';
 import { PostCard } from '@/src/modules/content/ui/PostCard';
+import { tagService } from '@/src/modules/tags';
 
 interface TagPageProps {
   params: Promise<{
@@ -48,7 +48,7 @@ async function TagPosts({ slug, page }: { slug: string; page: number }) {
         <div className="border-b border-gray-200 pb-6">
           <div className="flex items-center space-x-4">
             <div className="rounded-full bg-blue-100 p-3">
-              <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="size-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
               </svg>
             </div>
@@ -70,7 +70,7 @@ async function TagPosts({ slug, page }: { slug: string; page: number }) {
               </Link>
             </li>
             <li>
-              <svg className="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-5 shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
               </svg>
             </li>
@@ -80,7 +80,7 @@ async function TagPosts({ slug, page }: { slug: string; page: number }) {
               </Link>
             </li>
             <li>
-              <svg className="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-5 shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
               </svg>
             </li>
@@ -108,8 +108,8 @@ async function TagPosts({ slug, page }: { slug: string; page: number }) {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="mx-auto h-24 w-24 text-gray-300">
+          <div className="py-12 text-center">
+            <div className="mx-auto size-24 text-gray-300">
               <svg fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
               </svg>
@@ -160,10 +160,10 @@ async function TagPosts({ slug, page }: { slug: string; page: number }) {
                   {page > 1 && (
                     <Link
                       href={`/tags/${slug}?page=${page - 1}`}
-                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                      className="relative inline-flex items-center rounded-l-md p-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
                     >
                       <span className="sr-only">Previous</span>
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                       </svg>
                     </Link>
@@ -191,10 +191,10 @@ async function TagPosts({ slug, page }: { slug: string; page: number }) {
                   {page < totalPages && (
                     <Link
                       href={`/tags/${slug}?page=${page + 1}`}
-                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                      className="relative inline-flex items-center rounded-r-md p-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
                     >
                       <span className="sr-only">Next</span>
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
                       </svg>
                     </Link>
@@ -209,7 +209,7 @@ async function TagPosts({ slug, page }: { slug: string; page: number }) {
   } catch (error) {
     console.error('Error loading tag posts:', error);
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <h3 className="mt-4 text-lg font-medium text-gray-900">Error loading posts</h3>
         <p className="mt-2 text-sm text-gray-500">
           There was an error loading posts for this tag. Please try again later.

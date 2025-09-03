@@ -3,8 +3,8 @@
  * Displays all available tags with post counts and filtering capabilities
  */
 
-import { Suspense } from 'react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 import { tagService } from '@/src/modules/tags';
 
@@ -36,8 +36,8 @@ async function TagCloud() {
 
     if (!tags || tags.length === 0) {
       return (
-        <div className="text-center py-12">
-          <div className="mx-auto h-24 w-24 text-gray-300">
+        <div className="py-12 text-center">
+          <div className="mx-auto size-24 text-gray-300">
             <svg fill="currentColor" viewBox="0 0 24 24">
               <path d="M17.63 5.84C17.27 5.33 16.67 5 16 5L5 5.01C3.9 5.01 3 5.9 3 7v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2l-2.37.84zM16 7l2 2-2 2V7zM5 7h9v10H5V7z"/>
             </svg>
@@ -76,7 +76,7 @@ async function TagCloud() {
                   </p>
                 </div>
                 <div className="rounded-full bg-blue-100 p-2 group-hover:bg-blue-200">
-                  <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="size-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
                   </svg>
                 </div>
@@ -87,7 +87,7 @@ async function TagCloud() {
 
         {/* Popular Tags Section */}
         <div className="mt-12">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Popular Tags</h2>
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">Popular Tags</h2>
           <div className="flex flex-wrap gap-2">
             {tags
               .sort((a, b) => b.postCount - a.postCount)
@@ -96,7 +96,7 @@ async function TagCloud() {
                 <Link
                   key={tag.id}
                   href={`/tags/${tag.slug}`}
-                  className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition-colors duration-200"
+                  className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-blue-100 hover:text-blue-700"
                 >
                   {tag.name}
                   <span className="ml-1 text-xs text-gray-500">({tag.postCount})</span>
@@ -109,8 +109,8 @@ async function TagCloud() {
   } catch (error) {
     console.error('Error loading tags:', error);
     return (
-      <div className="text-center py-12">
-        <div className="mx-auto h-24 w-24 text-red-300">
+      <div className="py-12 text-center">
+        <div className="mx-auto size-24 text-red-300">
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
           </svg>

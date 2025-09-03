@@ -3,8 +3,8 @@
  * Displays hierarchical category structure with post counts
  */
 
-import { Suspense } from 'react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
 import { prisma } from '@/src/lib/db';
 
@@ -79,8 +79,8 @@ async function CategoryTree() {
 
     if (!categoriesWithCounts || categoriesWithCounts.length === 0) {
       return (
-        <div className="text-center py-12">
-          <div className="mx-auto h-24 w-24 text-gray-300">
+        <div className="py-12 text-center">
+          <div className="mx-auto size-24 text-gray-300">
             <svg fill="currentColor" viewBox="0 0 24 24">
               <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
             </svg>
@@ -112,8 +112,8 @@ async function CategoryTree() {
   } catch (error) {
     console.error('Error loading categories:', error);
     return (
-      <div className="text-center py-12">
-        <div className="mx-auto h-24 w-24 text-red-300">
+      <div className="py-12 text-center">
+        <div className="mx-auto size-24 text-red-300">
           <svg fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
           </svg>
@@ -141,7 +141,7 @@ function CategoryCard({ category, level }: { category: Category; level: number }
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="rounded-full bg-green-100 p-2 group-hover:bg-green-200">
-              <svg className="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="size-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
               </svg>
             </div>
