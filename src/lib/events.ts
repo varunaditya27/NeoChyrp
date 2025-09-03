@@ -43,6 +43,11 @@ class InMemoryEventBus {
       }
     }
   }
+
+  // Alias for compatibility
+  async emit<T = EventPayload>(event: EventName, payload: T) {
+    return this.publish(event, payload);
+  }
 }
 
 export const eventBus = new InMemoryEventBus();
@@ -52,10 +57,14 @@ export const CoreEvents = {
   PostPublished: 'content.post.published',
   PostUpdated: 'content.post.updated',
   PostDeleted: 'content.post.deleted',
+  PostUnpublished: 'content.post.unpublished',
   CommentCreated: 'comments.comment.created',
   CommentModerated: 'comments.comment.moderated',
+  CommentDeleted: 'comments.comment.deleted',
   LikeAdded: 'likes.like.added',
   LikeRemoved: 'likes.like.removed',
+  TagCreated: 'tags.tag.created',
+  UserDeleted: 'users.user.deleted',
   ViewRegistered: 'views.post.viewed',
   WebMentionReceived: 'webmentions.received',
   SitemapRegenerationRequested: 'sitemap.regenerate.requested'
