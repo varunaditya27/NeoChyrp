@@ -1,40 +1,27 @@
 /**
- * Modules Registry
- * ----------------
- * Central registration and initialization of all application modules.
- * Each module provides specific functionality like comments, tags, likes, etc.
- * Uses the module registry system for consistent management.
+ * Central Module Registrar
+ * Import every implemented module exactly once for side‑effect registration.
+ * Keep this list explicit & alphabetized for clarity and to avoid accidental duplicates.
  */
-
-// Import all module registrations
-import './comments';
-import './likes';
-import './tags';
-import './views';
-import './categories';
 import './cacher';
-import './webmentions';
-import './read_more';
-import './rights';
-import './sitemap';
 import './cascade';
+import './categories';
+import './comments';
 import './easy_embed';
 import './highlighter';
 import './lightbox';
+import './likes';
 import './maptcha';
 import './mathjax';
-// import './highlighter';
-// import './easy_embed';
-// import './mathjax';
+import './post_views';
+import './read_more';
+import './rights';
+import './sitemap';
+import './tags';
+import './views';
+import './webmentions';
 
 /**
  * Initialize all registered modules
  */
-export async function initializeAllModules(): Promise<void> {
-  console.log('Initializing all modules...');
-
-  // The modules will have registered themselves via their imports above
-  // The module registry will handle initialization
-
-  console.log('All modules initialized');
-}
+export async function initializeAllModules(): Promise<void> { /* No-op: modules self-register */ }
