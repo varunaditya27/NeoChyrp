@@ -43,12 +43,12 @@ export function Navbar() {
   });
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="border-b bg-white shadow-sm">
       <div className="mx-auto max-w-5xl px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
+            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 font-bold text-white">
               N
             </div>
             <span className="text-xl font-bold text-gray-900">NeoChyrp</span>
@@ -65,8 +65,8 @@ export function Navbar() {
                 href={item.href}
                 className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                   isActive(item.href)
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-gray-900 hover:border-b-2 hover:border-gray-300"
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-gray-600 hover:border-b-2 hover:border-gray-300 hover:text-gray-900"
                 }`}
               >
                 {item.label}
@@ -80,7 +80,7 @@ export function Navbar() {
               <div className="h-8 w-20 animate-pulse rounded bg-gray-200" />
             ) : user ? (
               <div className="flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-semibold">
+                <div className="flex size-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
                   {user.email?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <span className="text-sm text-gray-700">
@@ -115,11 +115,11 @@ export function Navbar() {
             >
               <span className="sr-only">Open main menu</span>
               {!isMobileMenuOpen ? (
-                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <svg className="block size-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
               ) : (
-                <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+                <svg className="block size-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               )}
@@ -138,7 +138,7 @@ export function Navbar() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
                     isActive(item.href)
-                      ? "bg-blue-50 text-blue-600 border-r-4 border-blue-600"
+                      ? "border-r-4 border-blue-600 bg-blue-50 text-blue-600"
                       : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   }`}
                 >
@@ -155,7 +155,7 @@ export function Navbar() {
                 ) : user ? (
                   <div className="px-3 py-2">
                     <div className="flex items-center space-x-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-semibold">
+                      <div className="flex size-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
                         {user.email?.charAt(0).toUpperCase() || "U"}
                       </div>
                       <span className="text-sm text-gray-700">
