@@ -1,24 +1,25 @@
 /**
- * Blog index page (server component):
- * Enhanced blog listing with search, filtering, and pagination
+ * Individual Tag Page
+ * Shows posts associated with a specific tag
  */
 
 import { Suspense } from 'react';
 import Link from 'next/link';
 
-import { prisma } from '@/src/lib/db';
+import { tagService } from '@/src/modules/tags';
 import { PostCard } from '@/src/modules/content/ui/PostCard';
 
-interface BlogPageProps {
+interface TagPageProps {
+  params: Promise<{
+    slug: string;
+  }>;
   searchParams: Promise<{
     page?: string;
-    search?: string;
-    feather?: string;
   }>;
 }
 
 // Loading component
-function BlogLoading() {
+function TagPostsLoading() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -34,108 +35,60 @@ function BlogLoading() {
   );
 }
 
-// Blog Posts Component
-async function BlogPosts({ page, search, feather }: { page: number; search?: string; feather?: string }) {
-  const limit = 12;
-  const offset = (page - 1) * limit;
-
+// Tag Posts Component
+async function TagPosts({ slug, page }: { slug: string; page: number }) {
   try {
-    // Build where clause
-    const where: any = {
-      visibility: 'PUBLISHED',
-    };
-
-    if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { excerpt: { contains: search, mode: 'insensitive' } },
-        { body: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (feather) {
-      where.feather = feather.toUpperCase();
-    }
-
-    // Fetch posts and total count
-    const [posts, totalCount] = await Promise.all([
-      prisma.post.findMany({
-        where,
-        include: {
-          author: {
-            select: {
-              id: true,
-              username: true,
-              displayName: true,
-            },
-          },
-          tags: {
-            include: {
-              tag: true,
-            },
-          },
-        },
-        orderBy: {
-          publishedAt: 'desc',
-        },
-        skip: offset,
-        take: limit,
-      }),
-      prisma.post.count({ where }),
-    ]);
-
-    const totalPages = Math.ceil(totalCount / limit);
-
-    // Get feather counts for filter
-    const featherCounts = await prisma.post.groupBy({
-      by: ['feather'],
-      where: {
-        visibility: 'PUBLISHED',
-      },
-      _count: {
-        feather: true,
-      },
-    });
+    // Get posts for this tag
+    const result = await tagService.getTagPosts(slug, page, 12);
+    const { posts, total, totalPages, tag } = result;
 
     return (
       <div className="space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Blog</h1>
-          <p className="mt-2 text-gray-600">
-            {search
-              ? `Search results for "${search}" (${totalCount} ${totalCount === 1 ? 'post' : 'posts'})`
-              : `Discover ${totalCount} ${totalCount === 1 ? 'post' : 'posts'} across various topics`
-            }
-          </p>
+        {/* Tag Header */}
+        <div className="border-b border-gray-200 pb-6">
+          <div className="flex items-center space-x-4">
+            <div className="rounded-full bg-blue-100 p-3">
+              <svg className="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">#{tag.name}</h1>
+              <p className="text-gray-600">
+                {total} {total === 1 ? 'post' : 'posts'} tagged with &quot;{tag.name}&quot;
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-4 justify-center">
-          <Link
-            href="/blog"
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-              !feather
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            All Posts
-          </Link>
-          {featherCounts.map((item) => (
-            <Link
-              key={item.feather}
-              href={`/blog?feather=${item.feather.toLowerCase()}`}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ${
-                feather?.toUpperCase() === item.feather
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {item.feather.charAt(0) + item.feather.slice(1).toLowerCase()} ({item._count.feather})
-            </Link>
-          ))}
-        </div>
+        {/* Breadcrumb */}
+        <nav className="flex" aria-label="Breadcrumb">
+          <ol className="flex items-center space-x-4">
+            <li>
+              <Link href="/" className="text-gray-400 hover:text-gray-500">
+                Home
+              </Link>
+            </li>
+            <li>
+              <svg className="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+              </svg>
+            </li>
+            <li>
+              <Link href="/tags" className="text-gray-400 hover:text-gray-500">
+                Tags
+              </Link>
+            </li>
+            <li>
+              <svg className="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
+              </svg>
+            </li>
+            <li>
+              <span className="text-gray-500">{tag.name}</span>
+            </li>
+          </ol>
+        </nav>
 
         {/* Posts Grid */}
         {posts && posts.length > 0 ? (
@@ -161,23 +114,16 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
               </svg>
             </div>
-            <h3 className="mt-4 text-lg font-medium text-gray-900">
-              {search ? 'No posts found' : 'No posts yet'}
-            </h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No posts found</h3>
             <p className="mt-2 text-sm text-gray-500">
-              {search
-                ? `Try adjusting your search terms or browse all posts.`
-                : 'Posts will appear here once they are published.'
-              }
+              There are no published posts with the tag &quot;{tag.name}&quot; yet.
             </p>
-            {search && (
-              <Link
-                href="/blog"
-                className="mt-4 inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                View all posts
-              </Link>
-            )}
+            <Link
+              href="/tags"
+              className="mt-4 inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Browse all tags
+            </Link>
           </div>
         )}
 
@@ -187,7 +133,7 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
             <div className="flex flex-1 justify-between sm:hidden">
               {page > 1 && (
                 <Link
-                  href={`/blog?page=${page - 1}${search ? `&search=${search}` : ''}${feather ? `&feather=${feather}` : ''}`}
+                  href={`/tags/${slug}?page=${page - 1}`}
                   className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Previous
@@ -195,7 +141,7 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
               )}
               {page < totalPages && (
                 <Link
-                  href={`/blog?page=${page + 1}${search ? `&search=${search}` : ''}${feather ? `&feather=${feather}` : ''}`}
+                  href={`/tags/${slug}?page=${page + 1}`}
                   className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
                   Next
@@ -213,7 +159,7 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
                 <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                   {page > 1 && (
                     <Link
-                      href={`/blog?page=${page - 1}${search ? `&search=${search}` : ''}${feather ? `&feather=${feather}` : ''}`}
+                      href={`/tags/${slug}?page=${page - 1}`}
                       className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
                     >
                       <span className="sr-only">Previous</span>
@@ -223,14 +169,14 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
                     </Link>
                   )}
 
-                  {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                  {Array.from({ length: totalPages }).map((_, i) => {
                     const pageNum = i + 1;
                     const isCurrentPage = pageNum === page;
 
                     return (
                       <Link
                         key={pageNum}
-                        href={`/blog?page=${pageNum}${search ? `&search=${search}` : ''}${feather ? `&feather=${feather}` : ''}`}
+                        href={`/tags/${slug}?page=${pageNum}`}
                         className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
                           isCurrentPage
                             ? 'z-10 bg-blue-600 text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
@@ -244,7 +190,7 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
 
                   {page < totalPages && (
                     <Link
-                      href={`/blog?page=${page + 1}${search ? `&search=${search}` : ''}${feather ? `&feather=${feather}` : ''}`}
+                      href={`/tags/${slug}?page=${page + 1}`}
                       className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
                     >
                       <span className="sr-only">Next</span>
@@ -261,29 +207,34 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
       </div>
     );
   } catch (error) {
-    console.error('Error loading blog posts:', error);
+    console.error('Error loading tag posts:', error);
     return (
       <div className="text-center py-12">
-        <h3 className="mt-4 text-lg font-medium text-gray-900">Unable to load posts</h3>
+        <h3 className="mt-4 text-lg font-medium text-gray-900">Error loading posts</h3>
         <p className="mt-2 text-sm text-gray-500">
-          There was an error loading the blog posts. Please try again later.
+          There was an error loading posts for this tag. Please try again later.
         </p>
+        <Link
+          href="/tags"
+          className="mt-4 inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          Browse all tags
+        </Link>
       </div>
     );
   }
 }
 
-export default async function BlogIndexPage({ searchParams }: BlogPageProps) {
-  const params = await searchParams;
-  const page = parseInt(params.page || '1', 10);
-  const search = params.search;
-  const feather = params.feather;
+export default async function TagPage({ params, searchParams }: TagPageProps) {
+  const { slug } = await params;
+  const { page: pageParam } = await searchParams;
+  const page = parseInt(pageParam || '1', 10);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="mx-auto max-w-6xl px-4">
-        <Suspense fallback={<BlogLoading />}>
-          <BlogPosts page={page} search={search} feather={feather} />
+        <Suspense fallback={<TagPostsLoading />}>
+          <TagPosts slug={slug} page={page} />
         </Suspense>
       </div>
     </div>

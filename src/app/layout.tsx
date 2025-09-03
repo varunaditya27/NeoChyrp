@@ -10,17 +10,19 @@ import { AuthProvider } from '@/src/lib/auth/session';
 import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: 'NeoChyrp',
-  description: 'Modern remake of the Chyrp blogging engine'
+  title: 'NeoChyrp - Modern Blogging Platform',
+  description: 'A modern, extensible blogging engine built with Next.js, TypeScript, and Prisma'
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body className="flex min-h-screen flex-col">
+    <html lang="en" className="h-full">
+      <body className="h-full flex flex-col bg-gray-50">
         <AuthProvider>
           <Header />
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
+          <main className="flex-1">
+            {children}
+          </main>
           <Footer />
         </AuthProvider>
       </body>
