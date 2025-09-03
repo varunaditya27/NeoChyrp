@@ -1,17 +1,24 @@
 /**
- * Core Event System for NeoChyrp
- * Enables module extensibility through typed event emission and subscription
+ * NeoChyrp Event Bus (Single Implementation)
+ * -----------------------------------------
+ * Unified, minimal event workflow for all modules and core features.
+ * Public API surface (and the ONLY one to use):
+ *   eventBus.on(eventName, handler)
+ *   eventBus.emit(eventName, payload, metadata?)
+ *   eventBus.clear(eventName?)
+ * Event names live in CoreEvents to avoid typos. No alternate helpers, no aliases.
  */
 
-export interface Event {
+// Internal event envelope (not exposed to handlers directly)
+interface InternalEvent<T> {
   type: string;
   timestamp: Date;
-  payload: unknown;
+  payload: T;
   metadata?: Record<string, unknown>;
 }
 
 export interface EventHandler<T = unknown> {
-  (event: Event & { payload: T }): Promise<void> | void;
+  (payload: T): Promise<void> | void;
 }
 
 export interface EventSubscription {
@@ -25,28 +32,12 @@ class EventBusImpl {
    * Emit an event to all registered handlers
    */
   async emit<T>(type: string, payload: T, metadata?: Record<string, unknown>): Promise<void> {
-    const event: Event = {
-      type,
-      timestamp: new Date(),
-      payload,
-      metadata,
-    };
-
+    const _event: InternalEvent<T> = { type, timestamp: new Date(), payload, metadata };
     const eventHandlers = this.handlers.get(type);
-    if (!eventHandlers || eventHandlers.size === 0) {
-      return;
-    }
-
-    // Execute handlers in parallel but catch individual failures
+    if (!eventHandlers || eventHandlers.size === 0) return;
     const promises = Array.from(eventHandlers).map(async (handler) => {
-      try {
-        await handler(event as Event & { payload: T });
-      } catch (error) {
-        console.error(`Event handler error for ${type}:`, error);
-        // Don't let one handler failure stop others
-      }
+      try { await handler(_event.payload); } catch (error) { console.error(`Event handler error for ${type}:`, error); }
     });
-
     await Promise.allSettled(promises);
   }
 
@@ -86,57 +77,31 @@ class EventBusImpl {
       this.handlers.get(type)!.size > 0
     );
   }
+
 }
 
 // Global event bus instance
 export const eventBus = new EventBusImpl();
 
+// Canonical domain event names (single source of truth)
+export const CoreEvents = {
+  PostPublished: 'content.post.published',
+  PostUpdated: 'content.post.updated',
+  PostDeleted: 'content.post.deleted',
+  PostUnpublished: 'content.post.unpublished',
+  LikeAdded: 'likes.like.added',
+  LikeRemoved: 'likes.like.removed',
+  CommentCreated: 'comments.comment.created',
+  CommentModerated: 'comments.comment.moderated',
+  CommentDeleted: 'comments.comment.deleted',
+  TagCreated: 'tags.tag.created',
+  ViewRegistered: 'views.post.viewed',
+  WebMentionReceived: 'webmentions.received',
+  SitemapRegenerationRequested: 'sitemap.regenerate.requested',
+  CacheInvalidate: 'cache.invalidate',
+  CacheClear: 'cache.clear'
+} as const;
+
 // Event type definitions for type safety
-export interface EventTypes {
-  // Post lifecycle events
-  'post.beforeCreate': { post: unknown };
-  'post.afterCreate': { post: unknown };
-  'post.beforeUpdate': { post: unknown; changes: unknown };
-  'post.afterUpdate': { post: unknown };
-  'post.beforeDelete': { postId: string };
-  'post.afterDelete': { postId: string };
-  'post.beforePublish': { post: unknown };
-  'post.afterPublish': { post: unknown };
-
-  // Comment events
-  'comment.beforeCreate': { comment: unknown };
-  'comment.afterCreate': { comment: unknown };
-  'comment.beforeUpdate': { comment: unknown };
-  'comment.afterUpdate': { comment: unknown };
-  'comment.beforeDelete': { commentId: string };
-  'comment.afterDelete': { commentId: string };
-
-  // User events
-  'user.afterSignIn': { user: unknown };
-  'user.afterSignOut': { userId: string };
-
-  // Cache events
-  'cache.invalidate': { keys: string[]; tags?: string[] };
-  'cache.clear': { scope?: string };
-
-  // System events
-  'request.start': { requestId: string; path: string };
-  'request.end': { requestId: string; duration: number };
-  'sitemap.rebuild': { force?: boolean };
-}
-
-// Typed event emitter functions
-export function emitEvent<K extends keyof EventTypes>(
-  type: K,
-  payload: EventTypes[K],
-  metadata?: Record<string, unknown>
-): Promise<void> {
-  return eventBus.emit(type, payload, metadata);
-}
-
-export function onEvent<K extends keyof EventTypes>(
-  type: K,
-  handler: EventHandler<EventTypes[K]>
-): EventSubscription {
-  return eventBus.on(type, handler);
-}
+// (Optional) type mapping for future stricter typing without extra helpers
+export type DomainEventName = typeof CoreEvents[keyof typeof CoreEvents] | string;
