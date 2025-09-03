@@ -8,8 +8,9 @@ import { getPostBySlug } from '@/src/modules/content/application/queries/getPost
 
 interface Params { slug: string }
 
-export default async function PostPage({ params }: { params: Params }) {
-  const post = await getPostBySlug(params.slug);
+export default async function PostPage({ params }: { params: Promise<Params> }) {
+  const resolvedParams = await params;
+  const post = await getPostBySlug(resolvedParams.slug);
   if (!post) return notFound();
   return (
     <article className="prose max-w-none">
