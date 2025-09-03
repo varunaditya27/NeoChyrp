@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await fetch('/api/auth/sync', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'X-Sync-Reason': reason } });
       lastSyncedToken.current = accessToken;
     } catch (e) {
-      // eslint-disable-next-line no-console
+       
       console.warn('User sync failed', e);
     }
   }
