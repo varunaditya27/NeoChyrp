@@ -8,7 +8,7 @@ import { PostCard } from '@/src/modules/content/ui/PostCard';
 type Post = {
   id: string;
   slug: string;
-  title: string;
+  title: string | null;
   feather: string;
   excerpt?: string | null;
   publishedAt?: Date | null;
@@ -21,7 +21,7 @@ export default async function BlogIndexPage() {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {posts.map((p: Post) => (
-        <PostCard key={p.id} post={{ id: p.id, slug: p.slug, title: p.title, feather: p.feather, excerpt: p.excerpt ?? undefined, publishedAt: p.publishedAt?.toISOString() }} />
+        <PostCard key={p.id} post={{ id: p.id, slug: p.slug, title: p.title || 'Untitled', feather: p.feather, excerpt: p.excerpt ?? undefined, publishedAt: p.publishedAt?.toISOString() }} />
       ))}
       {posts.length === 0 && <p className="col-span-full text-sm text-neutral-500">No posts yet.</p>}
     </div>
