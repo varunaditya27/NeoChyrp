@@ -99,7 +99,8 @@ export const CoreEvents = {
   WebMentionReceived: 'webmentions.received',
   SitemapRegenerationRequested: 'sitemap.regenerate.requested',
   CacheInvalidate: 'cache.invalidate',
-  CacheClear: 'cache.clear'
+  CacheClear: 'cache.clear',
+  SettingsUpdated: 'settings.updated'
 } as const;
 
 // Event type definitions for type safety
