@@ -3,12 +3,13 @@
  * Handles CRUD operations for comments and moderation
  */
 
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { NextResponse } from 'next/server';
+import { commentService, CommentSchema } from '../../../modules/comments';
+
 import type { NextRequest } from 'next/server';
 
-import { commentService, CommentSchema } from '../../../modules/comments';
 
 // Request schemas
 const CreateCommentSchema = CommentSchema;
