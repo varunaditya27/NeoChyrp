@@ -11,7 +11,7 @@
 import { PrismaClient, UserRole } from '@prisma/client';
 
 if (!process.env.DATABASE_URL) {
-  // eslint-disable-next-line no-console
+   
   console.error('Missing DATABASE_URL. Set it in .env');
   process.exit(1);
 }

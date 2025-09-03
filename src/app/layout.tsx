@@ -17,7 +17,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className="h-full">
-      <body className="h-full flex flex-col bg-gray-50">
+      <body className="flex h-full flex-col bg-gray-50">
         <AuthProvider>
           <Header />
           <main className="flex-1">

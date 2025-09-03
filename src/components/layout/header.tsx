@@ -46,10 +46,10 @@ const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4">
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between p-4">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-sm">
+          <div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
             N
           </div>
           <span className="text-xl font-bold text-gray-900">NeoChyrp</span>
@@ -96,7 +96,7 @@ const Header: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setOpen(o => !o)}
-                className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors duration-200"
+                className="flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 aria-haspopup="menu"
                 aria-expanded={open}
               >
@@ -146,13 +146,13 @@ const Header: React.FC = () => {
             <div className="flex items-center space-x-3">
               <Link
                 href="/login"
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors duration-200"
+                className="text-sm font-medium text-gray-600 transition-colors duration-200 hover:text-gray-900"
               >
                 Login
               </Link>
               <Link
                 href="/register"
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors duration-200"
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-blue-700"
               >
                 Sign Up
               </Link>
@@ -164,16 +164,16 @@ const Header: React.FC = () => {
         <button
           type="button"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 md:hidden"
           aria-expanded="false"
         >
           <span className="sr-only">Open main menu</span>
           {!mobileMenuOpen ? (
-            <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <svg className="block size-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           ) : (
-            <svg className="block h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+            <svg className="block size-6" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           )}
@@ -182,7 +182,7 @@ const Header: React.FC = () => {
 
       {/* Mobile Navigation Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
+        <div className="border-t border-gray-200 bg-white md:hidden">
           <div className="space-y-1 px-4 pb-3 pt-2">
             {navigation.map((item) => (
               <Link
@@ -191,7 +191,7 @@ const Header: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
                   isActive(item.href)
-                    ? "bg-blue-50 text-blue-600 border-r-4 border-blue-600"
+                    ? "border-r-4 border-blue-600 bg-blue-50 text-blue-600"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
@@ -204,7 +204,7 @@ const Header: React.FC = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
                   isActive('/dashboard')
-                    ? "bg-blue-50 text-blue-600 border-r-4 border-blue-600"
+                    ? "border-r-4 border-blue-600 bg-blue-50 text-blue-600"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
@@ -222,7 +222,7 @@ const Header: React.FC = () => {
                 <div className="space-y-1">
                   <div className="px-3 py-2">
                     <div className="flex items-center space-x-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-semibold">
+                      <div className="flex size-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
                         {avatarLetter}
                       </div>
                       <span className="text-sm text-gray-700">{display}</span>
@@ -254,7 +254,7 @@ const Header: React.FC = () => {
                   <Link
                     href="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="block px-3 py-2 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md mx-3"
+                    className="mx-3 block rounded-md bg-blue-600 px-3 py-2 text-base font-medium text-white hover:bg-blue-700"
                   >
                     Sign Up
                   </Link>

@@ -3,12 +3,13 @@
  * Handles like/unlike operations and statistics
  */
 
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { NextResponse } from 'next/server';
+import { likeService } from '../../../modules/likes';
+
 import type { NextRequest } from 'next/server';
 
-import { likeService } from '../../../modules/likes';
 
 // Request schemas
 const ToggleLikeSchema = z.object({

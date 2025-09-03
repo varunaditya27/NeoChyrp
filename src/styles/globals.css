@@ -17,3 +17,25 @@ body {
 a {
   @apply text-brand underline-offset-2 hover:underline;
 }
+
+/* Typography & elements */
+@layer base {
+  h1 { @apply text-3xl font-bold tracking-tight text-gray-900; }
+  h2 { @apply text-2xl font-semibold tracking-tight text-gray-900; }
+  h3 { @apply text-xl font-semibold text-gray-800; }
+  p { @apply leading-relaxed; }
+  code { @apply rounded bg-gray-100 px-1.5 py-0.5 text-sm font-medium text-pink-600; }
+  pre { @apply rounded-lg bg-gray-900 p-4 text-sm text-gray-100 overflow-x-auto; }
+}
+
+@layer components {
+  .card { @apply rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow transition-shadow; }
+  .badge { @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-700; }
+  .btn { @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors; }
+  .btn-primary { @apply btn bg-blue-600 text-white hover:bg-blue-700; }
+  .btn-outline { @apply btn border border-gray-300 bg-white text-gray-700 hover:bg-gray-50; }
+}
+
+@layer utilities {
+  .gradient-brand { @apply bg-gradient-to-r from-blue-600 via-purple-600 to-fuchsia-600 text-white; }
+}

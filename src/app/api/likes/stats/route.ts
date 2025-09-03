@@ -2,12 +2,13 @@
  * Likes stats API
  */
 
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { NextResponse } from 'next/server';
+import { likeService } from '../../../../modules/likes';
+
 import type { NextRequest } from 'next/server';
 
-import { likeService } from '../../../../modules/likes';
 
 const StatsSchema = z.object({
   type: z.enum(['trending', 'user']),

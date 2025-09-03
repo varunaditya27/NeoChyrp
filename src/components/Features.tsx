@@ -19,14 +19,14 @@ const features = [
 ];
 
 const Features: React.FC = () => (
-  <section className="py-16 px-4 bg-gray-50">
-    <h2 className="text-3xl font-bold text-center mb-8">Why NeoChyrp?</h2>
-    <div className="flex flex-col md:flex-row justify-center gap-8">
+  <section className="bg-gray-50 px-4 py-16">
+    <h2 className="mb-8 text-center text-3xl font-bold">Why NeoChyrp?</h2>
+    <div className="flex flex-col justify-center gap-8 md:flex-row">
       {features.map((feature) => (
-        <div key={feature.title} className="flex flex-col items-center bg-white rounded-lg shadow p-6 w-full md:w-1/3">
-          <div className="text-4xl mb-4">{feature.icon}</div>
-          <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-          <p className="text-gray-600 text-center">{feature.description}</p>
+        <div key={feature.title} className="flex w-full flex-col items-center rounded-lg bg-white p-6 shadow md:w-1/3">
+          <div className="mb-4 text-4xl">{feature.icon}</div>
+          <h3 className="mb-2 text-xl font-semibold">{feature.title}</h3>
+          <p className="text-center text-gray-600">{feature.description}</p>
         </div>
       ))}
     </div>

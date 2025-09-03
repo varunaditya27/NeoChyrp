@@ -2,12 +2,13 @@
  * Posts by tag API
  */
 
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { NextResponse } from 'next/server';
+import { tagService } from '../../../../../modules/tags';
+
 import type { NextRequest } from 'next/server';
 
-import { tagService } from '../../../../../modules/tags';
 
 const TagPostsSchema = z.object({
   page: z.number().min(1).optional(),

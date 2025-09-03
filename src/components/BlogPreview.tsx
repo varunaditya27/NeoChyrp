@@ -1,6 +1,8 @@
 "use client";
+import Image from 'next/image';
 import React from "react";
-import { BlogPost } from "../types/blog";
+
+import type { BlogPost } from "../types/blog";
 
 const samplePosts: BlogPost[] = [
   {
@@ -22,14 +24,14 @@ const samplePosts: BlogPost[] = [
 ];
 
 const BlogPreview: React.FC = () => (
-  <div className="w-full max-w-3xl grid grid-cols-1 md:grid-cols-2 gap-6">
+  <div className="grid w-full max-w-3xl grid-cols-1 gap-6 md:grid-cols-2">
     {samplePosts.map((post) => (
-      <div key={post.id} className="bg-white rounded-lg shadow-md p-4 flex flex-col">
+      <div key={post.id} className="flex flex-col rounded-lg bg-white p-4 shadow-md">
         {post.image && (
-          <img src={post.image} alt={post.title} className="w-full h-40 object-cover rounded-md mb-3" />
+          <Image src={post.image} alt={post.title} width={600} height={160} className="mb-3 h-40 w-full rounded-md object-cover" />
         )}
         <h3 className="text-lg font-bold text-gray-900">{post.title}</h3>
-        <p className="text-gray-600 mb-2">{post.excerpt}</p>
+        <p className="mb-2 text-gray-600">{post.excerpt}</p>
         <div className="text-xs text-gray-400">{post.author} • {post.date}</div>
       </div>
     ))}

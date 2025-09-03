@@ -3,13 +3,14 @@
  * Manages tags and their associations with posts
  */
 
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { NextResponse } from 'next/server';
+import { getSession } from '../../../lib/auth';
+import { tagService, TagSchema } from '../../../modules/tags';
+
 import type { NextRequest } from 'next/server';
 
-import { tagService, TagSchema } from '../../../modules/tags';
-import { getSession } from '../../../lib/auth';
 
 // Request schemas
 const CreateTagSchema = TagSchema;

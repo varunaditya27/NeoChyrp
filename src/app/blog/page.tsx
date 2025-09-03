@@ -3,9 +3,10 @@
  * Enhanced blog listing with search, filtering, and pagination
  */
 
-import { Suspense } from 'react';
 import Link from 'next/link';
+import { Suspense } from 'react';
 
+import { Container } from '@/src/components/layout/Container';
 import { prisma } from '@/src/lib/db';
 import { PostCard } from '@/src/modules/content/ui/PostCard';
 
@@ -111,7 +112,7 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-4 justify-center">
+        <div className="flex flex-wrap items-center justify-center gap-4">
           <Link
             href="/blog"
             className={`rounded-full px-4 py-2 text-sm font-medium transition-colors duration-200 ${
@@ -155,8 +156,8 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="mx-auto h-24 w-24 text-gray-300">
+          <div className="py-12 text-center">
+            <div className="mx-auto size-24 text-gray-300">
               <svg fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
               </svg>
@@ -214,10 +215,10 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
                   {page > 1 && (
                     <Link
                       href={`/blog?page=${page - 1}${search ? `&search=${search}` : ''}${feather ? `&feather=${feather}` : ''}`}
-                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                      className="relative inline-flex items-center rounded-l-md p-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
                     >
                       <span className="sr-only">Previous</span>
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                       </svg>
                     </Link>
@@ -245,10 +246,10 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
                   {page < totalPages && (
                     <Link
                       href={`/blog?page=${page + 1}${search ? `&search=${search}` : ''}${feather ? `&feather=${feather}` : ''}`}
-                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                      className="relative inline-flex items-center rounded-r-md p-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
                     >
                       <span className="sr-only">Next</span>
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
                       </svg>
                     </Link>
@@ -263,7 +264,7 @@ async function BlogPosts({ page, search, feather }: { page: number; search?: str
   } catch (error) {
     console.error('Error loading blog posts:', error);
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <h3 className="mt-4 text-lg font-medium text-gray-900">Unable to load posts</h3>
         <p className="mt-2 text-sm text-gray-500">
           There was an error loading the blog posts. Please try again later.
@@ -281,11 +282,11 @@ export default async function BlogIndexPage({ searchParams }: BlogPageProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="mx-auto max-w-6xl px-4">
+      <Container>
         <Suspense fallback={<BlogLoading />}>
           <BlogPosts page={page} search={search} feather={feather} />
         </Suspense>
-      </div>
+      </Container>
     </div>
   );
 }

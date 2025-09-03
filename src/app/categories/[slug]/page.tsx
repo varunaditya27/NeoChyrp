@@ -3,9 +3,9 @@
  * Shows posts in a specific category and its subcategories
  */
 
-import { Suspense } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { prisma } from '@/src/lib/db';
 import { PostCard } from '@/src/modules/content/ui/PostCard';
@@ -121,7 +121,7 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
         <div className="border-b border-gray-200 pb-6">
           <div className="flex items-center space-x-4">
             <div className="rounded-full bg-green-100 p-3">
-              <svg className="h-6 w-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="size-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
               </svg>
             </div>
@@ -149,7 +149,7 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
               </Link>
             </li>
             <li>
-              <svg className="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-5 shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
               </svg>
             </li>
@@ -161,7 +161,7 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
             {category.parent && (
               <>
                 <li>
-                  <svg className="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="size-5 shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
                   </svg>
                 </li>
@@ -173,7 +173,7 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
               </>
             )}
             <li>
-              <svg className="h-5 w-5 flex-shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="size-5 shrink-0 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M5.555 17.776l8-16 .894.448-8 16-.894-.448z" />
               </svg>
             </li>
@@ -196,7 +196,7 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
                 >
                   <div className="flex items-center space-x-3">
                     <div className="rounded-full bg-green-100 p-2 group-hover:bg-green-200">
-                      <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                      <svg className="size-4 text-green-600" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
                       </svg>
                     </div>
@@ -215,7 +215,7 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
         {/* Posts Grid */}
         {posts && posts.length > 0 ? (
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Posts</h2>
+            <h2 className="mb-6 text-xl font-semibold text-gray-900">Posts</h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {posts.map((post) => (
                 <PostCard
@@ -233,8 +233,8 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
             </div>
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="mx-auto h-24 w-24 text-gray-300">
+          <div className="py-12 text-center">
+            <div className="mx-auto size-24 text-gray-300">
               <svg fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
               </svg>
@@ -285,10 +285,10 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
                   {page > 1 && (
                     <Link
                       href={`/categories/${slug}?page=${page - 1}`}
-                      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                      className="relative inline-flex items-center rounded-l-md p-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
                     >
                       <span className="sr-only">Previous</span>
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                       </svg>
                     </Link>
@@ -316,10 +316,10 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
                   {page < totalPages && (
                     <Link
                       href={`/categories/${slug}?page=${page + 1}`}
-                      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
+                      className="relative inline-flex items-center rounded-r-md p-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
                     >
                       <span className="sr-only">Next</span>
-                      <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <svg className="size-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
                       </svg>
                     </Link>
@@ -334,7 +334,7 @@ async function CategoryPosts({ slug, page }: { slug: string; page: number }) {
   } catch (error) {
     console.error('Error loading category posts:', error);
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <h3 className="mt-4 text-lg font-medium text-gray-900">Error loading posts</h3>
         <p className="mt-2 text-sm text-gray-500">
           There was an error loading posts for this category. Please try again later.
