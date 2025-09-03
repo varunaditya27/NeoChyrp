@@ -1,13 +1,8 @@
-/**
- * Text Feather - Standard textual/markdown posts
- * The most basic content type for traditional blog entries
- */
-
 import DOMPurify from 'isomorphic-dompurify';
 import { marked } from 'marked';
 import { z } from 'zod';
 
-import { registerFeather, type FeatherRenderer, type FeatherExcerptGenerator } from '../lib/feathers/registry';
+import { registerFeather, type FeatherRenderer, type FeatherExcerptGenerator } from '@/src/lib/feathers/registry';
 
 // Schema for text feather payload
 export const TextFeatherSchema = z.object({
@@ -89,7 +84,7 @@ function generateTextExcerpt(payload: TextFeatherPayload): string {
 // Register the feather
 registerFeather(
   {
-    slug: 'text',
+    slug: 'TEXT',
     name: 'Text',
     version: '1.0.0',
     description: 'Standard textual blog posts with Markdown support',
