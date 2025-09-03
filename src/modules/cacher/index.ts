@@ -1,24 +1,104 @@
-/** Cacher Module Placeholder
- * - Strategy: cache rendered HTML fragments or JSON API responses.
- * - Initial simplistic in-memory map; later pluggable (Redis / Edge KV / CDN layer).
- * - Handles invalidation on relevant events (post update/delete, comment add).
+/**
+ * Cacher Module
+ * -------------
+ * Provides caching functionality for rendered content and API responses.
+ * Initial implementation uses in-memory storage, can be extended to Redis/Edge KV.
+ * Handles cache invalidation on relevant events (post update/delete, comment add).
  */
-import type { ModuleDescriptor } from '../index';
-import { eventBus, CoreEvents } from '../../lib/events';
 
-export function registerCacherModule(): ModuleDescriptor {
-  const cache = new Map<string, { body: string; updated: number }>();
-  return {
-    name: 'cacher',
-    enabled: true,
-    init() {
-      eventBus.subscribe(CoreEvents.PostUpdated, ({ postId }: any) => {
-        // naive key pattern example
-        cache.delete(`post:${postId}`);
-      });
-    },
-    dispose() {
-      cache.clear();
+import { z } from 'zod';
+
+import { eventBus, CoreEvents } from '../../lib/events';
+import { registerModule } from '../../lib/modules/registry';
+
+// Cache service
+const cache = new Map<string, { body: string; updated: number }>();
+
+export const cacheService = {
+  get(key: string): string | null {
+    const item = cache.get(key);
+    if (!item) return null;
+
+    // Check if cache is expired (5 minutes default)
+    const maxAge = 5 * 60 * 1000;
+    if (Date.now() - item.updated > maxAge) {
+      cache.delete(key);
+      return null;
     }
-  };
-}
+
+    return item.body;
+  },
+
+  set(key: string, value: string): void {
+    cache.set(key, {
+      body: value,
+      updated: Date.now(),
+    });
+  },
+
+  delete(key: string): void {
+    cache.delete(key);
+  },
+
+  clear(): void {
+    cache.clear();
+  },
+
+  getStats() {
+    return {
+      size: cache.size,
+      keys: Array.from(cache.keys()),
+    };
+  },
+};
+
+// Register the module
+registerModule({
+  manifest: {
+    slug: 'cacher',
+    name: 'Cacher',
+    version: '1.0.0',
+    description: 'In-memory caching system for rendered content and API responses',
+    dependencies: [],
+    config: {
+      schema: z.object({
+        maxAge: z.number().default(300), // 5 minutes
+        maxSize: z.number().default(1000), // max cache entries
+      }),
+      defaults: {
+        maxAge: 300,
+        maxSize: 1000,
+      },
+    },
+  },
+  async activate() {
+    console.log('[Cacher] Module activated');
+
+    // Cache invalidation on post events
+    eventBus.subscribe(CoreEvents.PostUpdated, async (payload) => {
+      const { postId } = payload as { postId: string };
+      console.log('[Cacher] Invalidating cache for post:', postId);
+      cacheService.delete(`post:${postId}`);
+      cacheService.delete(`post-rendered:${postId}`);
+    });
+
+    eventBus.subscribe(CoreEvents.PostDeleted, async (payload) => {
+      const { postId } = payload as { postId: string };
+      console.log('[Cacher] Invalidating cache for deleted post:', postId);
+      cacheService.delete(`post:${postId}`);
+      cacheService.delete(`post-rendered:${postId}`);
+    });
+
+    // Cache invalidation on comment events
+    eventBus.subscribe(CoreEvents.CommentCreated, async (payload) => {
+      const { postId } = payload as { postId: string };
+      console.log('[Cacher] Invalidating post cache due to new comment:', postId);
+      cacheService.delete(`post-comments:${postId}`);
+    });
+  },
+
+  async deactivate() {
+    console.log('[Cacher] Module deactivated');
+    cacheService.clear();
+  },
+});
