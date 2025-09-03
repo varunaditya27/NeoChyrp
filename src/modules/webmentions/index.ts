@@ -60,7 +60,7 @@ registerModule({
   async activate() {
     console.log('[WebMentions] Module activated');
 
-    eventBus.subscribe(CoreEvents.PostPublished, async (payload) => {
+  eventBus.on(CoreEvents.PostPublished, async (payload) => {
       const { postId } = payload as { postId: string; content?: string };
       console.log('[WebMentions] Evaluating outbound mentions for post:', postId);
       // TODO: Extract content and send webmentions

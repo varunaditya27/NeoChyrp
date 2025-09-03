@@ -72,15 +72,15 @@ registerModule({
   async activate() {
     console.log('[Sitemap] Module activated');
 
-    eventBus.subscribe(CoreEvents.PostPublished, async () => {
+  eventBus.on(CoreEvents.PostPublished, async () => {
       sitemapService.queueRegeneration();
     });
 
-    eventBus.subscribe(CoreEvents.PostUpdated, async () => {
+  eventBus.on(CoreEvents.PostUpdated, async () => {
       sitemapService.queueRegeneration();
     });
 
-    eventBus.subscribe(CoreEvents.PostDeleted, async () => {
+  eventBus.on(CoreEvents.PostDeleted, async () => {
       sitemapService.queueRegeneration();
     });
   },
