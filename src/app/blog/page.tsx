@@ -8,8 +8,8 @@ import { Suspense } from 'react';
 
 import { Container } from '@/src/components/layout/Container';
 import { prisma } from '@/src/lib/db';
-import { PostCard } from '@/src/modules/content/ui/PostCard';
 import { settingsService } from '@/src/lib/settings/service';
+import { PostCard } from '@/src/modules/content/ui/PostCard';
 
 interface BlogPageProps {
   searchParams: Promise<{

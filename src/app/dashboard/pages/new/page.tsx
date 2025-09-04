@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { Container } from '@/src/components/layout/Container';
+import { MarkdownEditor } from '@/src/components/markdown/MarkdownEditor';
 import { prisma } from '@/src/lib/db';
 import { uniquePageSlug } from '@/src/lib/slug';
 
@@ -31,7 +32,7 @@ export default function NewPagePage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Body (Markdown)</label>
-            <textarea name="body" rows={10} required className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"></textarea>
+            <MarkdownEditor name="body" required aria-label="Page body markdown editor" description="Use Markdown. Supports headings, lists, code fences, links, tables." />
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Status</label>

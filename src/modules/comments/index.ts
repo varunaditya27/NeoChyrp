@@ -10,18 +10,19 @@
 
 import { z } from 'zod';
 
+import { applyFilters } from '@/src/lib/triggers';
+
 import { prisma } from '../../lib/db';
 import { eventBus, CoreEvents } from '../../lib/events';
 import { registerModule } from '../../lib/modules/registry';
-import { applyFilters } from '@/src/lib/triggers';
 
 // Comment validation schema
 export const CommentSchema = z.object({
   body: z.string().min(1, 'Comment content is required').max(10000, 'Comment too long'),
   guestName: z.string().min(1, 'Author name is required').max(100),
   guestUrl: z.string().url().optional().or(z.literal('')),
-  postId: z.string().uuid('Valid post ID is required'),
-  parentId: z.string().uuid().optional(),
+  postId: z.string().cuid('Valid post ID is required'),
+  parentId: z.string().cuid().optional(),
 });
 
 export type CommentInput = z.infer<typeof CommentSchema>;
@@ -32,7 +33,9 @@ export const commentService = {
    * Create a new comment
    */
   async createComment(input: CommentInput & { captchaToken?: string; captchaAnswer?: string }) {
-    const validatedInput = CommentSchema.parse(input);
+    // Extract captcha transport fields before validation
+    const { captchaToken, captchaAnswer, ...rest } = input as any;
+    const validatedInput = CommentSchema.parse(rest);
 
     // Check if post exists
     const post = await prisma.post.findUnique({
@@ -56,13 +59,13 @@ export const commentService = {
 
     // Optional CAPTCHA validation via filter (modules can hook)
     try {
-      const ok = await applyFilters('captcha_validate', true, input.captchaToken, input.captchaAnswer, validatedInput.postId);
+  const ok = await applyFilters('captcha_validate', true, captchaToken, captchaAnswer, validatedInput.postId);
       if (!ok) throw new Error('Captcha validation failed');
     } catch (e:any) {
       if (e?.message?.includes('Captcha')) throw e;
     }
 
-    // Create comment with initial status based on settings
+    // Create comment with immediate approval (Instagram-like)
     const comment = await prisma.comment.create({
       data: {
         body: validatedInput.body,
@@ -70,7 +73,7 @@ export const commentService = {
         guestUrl: validatedInput.guestUrl || null,
         postId: validatedInput.postId,
         parentId: validatedInput.parentId || null,
-        status: 'PENDING', // Default to pending for moderation
+        status: 'APPROVED', // Always approved immediately
       },
       include: {
         post: true,
@@ -92,16 +95,18 @@ export const commentService = {
   },
 
   /**
-   * Get comments for a post with threading
+   * Get comments for a post with threading (all approved comments visible)
    */
   async getCommentsForPost(postId: string, includeUnapproved = false) {
     const whereClause: any = {
       postId,
       parentId: null, // Top-level comments only
+      status: 'APPROVED', // Only show approved comments (which are all comments now)
     };
 
-    if (!includeUnapproved) {
-      whereClause.status = 'approved';
+    // Admin override to see all comments including moderated ones
+    if (includeUnapproved) {
+      delete whereClause.status;
     }
 
     const comments = await prisma.comment.findMany({
@@ -233,11 +238,11 @@ registerModule({
         maxCommentsPerWindow: z.number().default(5),
       }),
       defaults: {
-        requireModeration: true,
+        requireModeration: false, // Instagram-like: no moderation required
         allowAnonymous: true,
         maxNestingLevel: 3,
         rateLimitWindow: 15,
-        maxCommentsPerWindow: 5,
+        maxCommentsPerWindow: 10, // Increased for better user experience
       },
     },
   },

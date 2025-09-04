@@ -15,6 +15,8 @@ import { useSiteSettings } from '@/src/lib/settings/useSiteSettings';
 const Header: React.FC = () => {
   const { user, loading, signOut } = useAuth();
   const pathname = usePathname();
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
   const [open, setOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -41,6 +43,7 @@ const Header: React.FC = () => {
   ];
 
   const isActive = (href: string) => {
+    if (!hydrated) return false; // Prevent server/client mismatch by delaying until mount
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
   };
@@ -62,27 +65,24 @@ const Header: React.FC = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex md:items-center md:space-x-8">
-          {navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`text-sm font-medium transition-colors duration-200 ${
-                isActive(item.href)
-                  ? "text-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {item.name}
-            </Link>
-          ))}
+          {navigation.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                className={`text-sm font-medium transition-colors duration-200 ${active ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
+              >
+                {item.name}
+              </Link>
+            );
+          })}
           {user && (
             <Link
               href="/dashboard"
-              className={`text-sm font-medium transition-colors duration-200 ${
-                isActive('/dashboard')
-                  ? "text-blue-600"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
+              aria-current={isActive('/dashboard') ? 'page' : undefined}
+              className={`text-sm font-medium transition-colors duration-200 ${isActive('/dashboard') ? 'text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
             >
               Dashboard
             </Link>

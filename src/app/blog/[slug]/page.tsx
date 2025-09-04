@@ -2,11 +2,14 @@
  * Single Post page (server component):
  * - Renders content by slug. Add incremental static regen later if desired.
  */
-import DOMPurify from 'isomorphic-dompurify';
-import { marked } from 'marked';
 import { notFound } from 'next/navigation';
 
+import { ViewTracker } from '@/src/components/analytics/ViewTracker';
+import { CommentsThread } from '@/src/components/interactions/CommentsThread';
+import { LikeButton } from '@/src/components/interactions/LikeButton';
+import { MathJaxLoader } from '@/src/components/math/MathJaxLoader';
 import { getRelatedPosts } from '@/src/lib/content/related';
+import { renderMarkdown, injectEmoji } from '@/src/lib/markdown';
 import { getPostBySlug } from '@/src/modules/content/application/queries/getPostBySlug';
 
 interface Params { slug: string }
@@ -17,12 +20,18 @@ export default async function PostPage({ params }: { params: Promise<Params> }) 
   if (!post) return notFound();
   const related = await getRelatedPosts(post.id, 5);
   const raw = post.body || '';
-  const html = DOMPurify.sanitize(marked.parse(raw) as string);
+  const html = injectEmoji(renderMarkdown(raw));
   return (
     <article className="prose max-w-none">
       <h1>{post.title || '(untitled)'}</h1>
       <div className="text-xs text-neutral-500">{post.publishedAt?.toLocaleDateString()}</div>
+      <div className="mt-4 flex items-center gap-4">
+        {/* Optimistically pass 0; LikeButton will fetch real data */}
+        <LikeButton postId={post.id} />
+      </div>
       <div className="mt-6" dangerouslySetInnerHTML={{ __html: html }} />
+      <ViewTracker postId={post.id} />
+      <MathJaxLoader />
       {related.length > 0 && (
         <section className="mt-12 border-t pt-6">
           <h2 className="mb-4 text-lg font-semibold">Related Posts</h2>
@@ -33,6 +42,7 @@ export default async function PostPage({ params }: { params: Promise<Params> }) 
           </ul>
         </section>
       )}
+      <CommentsThread postId={post.id} />
     </article>
   );
 }

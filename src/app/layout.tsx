@@ -3,6 +3,7 @@
  * - Defines global HTML shell, metadata, and providers (theme, auth, etc.).
  */
 import '@/src/styles/globals.css';
+import '@/src/styles/highlight.css';
 import { Footer } from '@/src/components/layout/footer';
 import { Header } from '@/src/components/layout/header';
 import ThemeClient from '@/src/components/ThemeClient';

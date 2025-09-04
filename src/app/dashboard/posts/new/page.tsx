@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { Container } from '@/src/components/layout/Container';
+import { MarkdownEditor } from '@/src/components/markdown/MarkdownEditor';
 import { prisma } from '@/src/lib/db';
 import { uniquePostSlug, uniqueTagSlug, uniqueCategorySlug } from '@/src/lib/slug';
 
@@ -88,7 +89,7 @@ export default function NewPostPage() {
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Body (Markdown)</label>
-            <textarea name="body" rows={10} required className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"></textarea>
+            <MarkdownEditor name="body" required aria-label="Post body markdown editor" description="Use Markdown syntax. Ctrl/Cmd+B for bold, I for italics, K for link." />
           </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
