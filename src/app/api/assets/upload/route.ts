@@ -1,17 +1,19 @@
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
 
 import { NextResponse } from 'next/server';
 
 import { getUserFromBearer } from '@/src/lib/auth/currentUser';
 import { prisma } from '@/src/lib/db';
+import { requirePermission } from '@/src/lib/permissions';
 import { createSupabaseServiceClient, MEDIA_BUCKET, publicAssetUrl } from '@/src/lib/storage';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  // Auth
+  // Auth + permission
   const user = await getUserFromBearer(req.headers.get('authorization'));
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  try { await requirePermission(req as any, 'asset:upload'); } catch (e:any) { return NextResponse.json({ error: e.message }, { status: e.status || 403 }); }
 
   const form = await req.formData();
   const file = form.get('file');
@@ -39,14 +41,22 @@ export async function POST(req: Request) {
   // Attempt optional dimension extraction for images
   let width: number | null = null;
   let height: number | null = null;
+  let thumbPath: string | null = null;
   if (mimeType.startsWith('image/')) {
     try {
-      const mod: any = await import('image-size').catch(() => null);
-      if (mod) {
-        const sizeInfo = mod.imageSize(buffer);
-        width = sizeInfo.width || null;
-        height = sizeInfo.height || null;
-      }
+      const sharp = (await import('sharp')).default;
+      const meta = await sharp(buffer).metadata();
+      width = meta.width || null;
+      height = meta.height || null;
+      // Generate a small webp thumbnail (fit inside 256x256)
+      const thumb = await sharp(buffer).resize(256, 256, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 70 }).toBuffer();
+      thumbPath = `${user.id}/thumb_${id}.webp`;
+      const { error: thumbErr } = await supabase.storage.from(MEDIA_BUCKET).upload(thumbPath, thumb, {
+        cacheControl: '3600',
+        contentType: 'image/webp',
+        upsert: true
+      });
+      if (thumbErr) thumbPath = null;
     } catch { /* ignore */ }
   }
 
@@ -63,6 +73,7 @@ export async function POST(req: Request) {
 
   const url = publicAssetUrl(path);
 
+  const accessToken = randomBytes(12).toString('base64url');
   const asset = await prisma.asset.create({
     data: {
       ownerId: user.id,
@@ -74,9 +85,11 @@ export async function POST(req: Request) {
       durationMs: undefined,
       checksum: null,
       storagePath: path,
-      url
+      url,
+  ...(thumbPath ? { /* new field */ thumbnailPath: thumbPath as any } : {}),
+  ...(accessToken ? { /* new field */ accessToken: accessToken as any } : {})
     }
   });
 
-  return NextResponse.json({ data: asset });
+  return NextResponse.json({ data: { ...asset, thumbnailUrl: thumbPath ? publicAssetUrl(thumbPath) : null } });
 }
