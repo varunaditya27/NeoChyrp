@@ -2,8 +2,7 @@
  * Single Post page (server component):
  * - Renders content by slug. Add incremental static regen later if desired.
  */
-import DOMPurify from 'isomorphic-dompurify';
-import { marked } from 'marked';
+import { renderMarkdown, injectEmoji } from '@/src/lib/markdown';
 import { notFound } from 'next/navigation';
 
 import { getRelatedPosts } from '@/src/lib/content/related';
@@ -17,7 +16,7 @@ export default async function PostPage({ params }: { params: Promise<Params> }) 
   if (!post) return notFound();
   const related = await getRelatedPosts(post.id, 5);
   const raw = post.body || '';
-  const html = DOMPurify.sanitize(marked.parse(raw) as string);
+  const html = injectEmoji(renderMarkdown(raw));
   return (
     <article className="prose max-w-none">
       <h1>{post.title || '(untitled)'}</h1>

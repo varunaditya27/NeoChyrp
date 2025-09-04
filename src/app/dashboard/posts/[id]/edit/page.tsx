@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { Container } from '@/src/components/layout/Container';
+import { MarkdownEditor } from '@/src/components/markdown/MarkdownEditor';
 import { prisma } from '@/src/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
 					</div>
 					<div>
 						<label className="mb-1 block text-sm font-medium">Body (Markdown)</label>
-						<textarea name="body" rows={10} defaultValue={post.body || ''} required className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500"></textarea>
+						<MarkdownEditor name="body" defaultValue={post.body || ''} required aria-label="Post body markdown editor" description="Use Markdown syntax. Toggle preview to see rendered output." />
 					</div>
 					<div>
 						<label className="mb-1 block text-sm font-medium">Status</label>
