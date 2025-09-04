@@ -8,31 +8,31 @@
 import { z } from 'zod';
 
 import { eventBus, CoreEvents } from '../../lib/events';
+import { prisma } from '@/src/lib/db';
 import { registerModule } from '../../lib/modules/registry';
 
 let lastQueued = 0;
 
 export const sitemapService = {
   async generateSitemap(): Promise<string> {
-    // TODO: Implement actual sitemap generation
     console.log('[Sitemap] Generating sitemap.xml');
-
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com';
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>${baseUrl}</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-  <url>
-    <loc>${baseUrl}/blog</loc>
-    <changefreq>daily</changefreq>
-    <priority>0.8</priority>
-  </url>
-</urlset>`;
-
-    return sitemap;
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const [posts, pages] = await Promise.all([
+      prisma.post.findMany({ where: { visibility: 'PUBLISHED' }, select: { slug: true, updatedAt: true, publishedAt: true } }),
+      prisma.page.findMany({ where: { visibility: 'PUBLISHED' }, select: { slug: true, updatedAt: true, publishedAt: true } })
+    ]);
+    const urls: string[] = [];
+    urls.push(`<url><loc>${baseUrl}</loc><changefreq>daily</changefreq><priority>1.0</priority></url>`);
+    urls.push(`<url><loc>${baseUrl}/blog</loc><changefreq>daily</changefreq><priority>0.8</priority></url>`);
+    for (const p of posts) {
+      const lastmod = (p.publishedAt || p.updatedAt).toISOString();
+      urls.push(`<url><loc>${baseUrl}/post/${p.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`);
+    }
+    for (const pg of pages) {
+      const lastmod = (pg.publishedAt || pg.updatedAt).toISOString();
+      urls.push(`<url><loc>${baseUrl}/page/${pg.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>`);
+    }
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join('\n')}</urlset>`;
   },
 
   queueRegeneration(): void {

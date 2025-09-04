@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { prisma } from '../../lib/db';
 import { eventBus, CoreEvents } from '../../lib/events';
 import { registerModule } from '../../lib/modules/registry';
+import { applyFilters } from '@/src/lib/triggers';
 
 // Comment validation schema
 export const CommentSchema = z.object({
@@ -30,7 +31,7 @@ export const commentService = {
   /**
    * Create a new comment
    */
-  async createComment(input: CommentInput) {
+  async createComment(input: CommentInput & { captchaToken?: string; captchaAnswer?: string }) {
     const validatedInput = CommentSchema.parse(input);
 
     // Check if post exists
@@ -51,6 +52,14 @@ export const commentService = {
       if (!parentComment || parentComment.postId !== validatedInput.postId) {
         throw new Error('Parent comment not found or belongs to different post');
       }
+    }
+
+    // Optional CAPTCHA validation via filter (modules can hook)
+    try {
+      const ok = await applyFilters('captcha_validate', true, input.captchaToken, input.captchaAnswer, validatedInput.postId);
+      if (!ok) throw new Error('Captcha validation failed');
+    } catch (e:any) {
+      if (e?.message?.includes('Captcha')) throw e;
     }
 
     // Create comment with initial status based on settings

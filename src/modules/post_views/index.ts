@@ -3,10 +3,12 @@
  * - Aggregates counts for analytics; emits events for popularity scoring.
  */
 import { createHash } from 'crypto';
+
 import { z } from 'zod';
+
 import { prisma } from '@/src/lib/db';
+import { eventBus } from '@/src/lib/events/index';
 import { registerModule } from '@/src/lib/modules/registry';
-import { eventBus } from '@/src/lib/events';
 
 const configSchema = z.object({
   dedupeMinutes: z.number().default(60),

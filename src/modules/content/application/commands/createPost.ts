@@ -8,10 +8,12 @@
 import { z } from 'zod';
 
 import { prisma } from '@/src/lib/db';
-import { eventBus, CoreEvents } from '@/src/lib/events';
+import { eventBus, CoreEvents } from '@/src/lib/events/index';
 import { featherRegistry } from '@/src/lib/feathers/registry';
 import { uniquePostSlug } from '@/src/lib/slug';
+import { applyFilters, LegacyFilters, doAction, LegacyActions } from '@/src/lib/triggers';
 import { rightsService } from '@/src/modules/rights';
+import '@/src/lib/markup/pipeline';
 
 // Input validation schema
 const CreatePostSchema = z.object({
@@ -49,7 +51,15 @@ export async function createPost(raw: CreatePostInput) {
     }
   }
   if (!excerpt && input.body) {
-    excerpt = input.body.replace(/<[^>]+>/g, '').slice(0, 180);
+    excerpt = input.body.slice(0, 180);
+  }
+  if (excerpt) {
+    excerpt = await applyFilters(LegacyFilters.EXCERPT, excerpt);
+  }
+
+  let renderedBody: string | undefined;
+  if (input.body) {
+    renderedBody = await applyFilters(LegacyFilters.MARKUP_TEXT, input.body);
   }
 
   const now = new Date();
@@ -59,7 +69,8 @@ export async function createPost(raw: CreatePostInput) {
       slug,
       title: input.title,
       authorId: input.authorId,
-      body: input.body,
+  body: input.body,
+  renderedBody,
       feather: input.feather as any,
       featherData: input.featherData as any,
       visibility: (input.visibility || (publish ? 'PUBLISHED' : 'DRAFT')) as any,
@@ -69,7 +80,11 @@ export async function createPost(raw: CreatePostInput) {
   });
 
   await eventBus.emit(CoreEvents.PostUpdated, { postId: post.id, post });
-  if (post.publishedAt) await eventBus.emit(CoreEvents.PostPublished, { postId: post.id, post });
+  if (post.publishedAt) {
+    await eventBus.emit(CoreEvents.PostPublished, { postId: post.id, post });
+    await doAction(LegacyActions.PUBLISH_POST, post);
+  }
+  await doAction(LegacyActions.ADD_POST, post);
 
   // Tag association if provided (best effort)
   if (input.tags?.length) {
