@@ -1,0 +1,20 @@
+/* Minimal highlight.js inspired styling (github-like) */
+.hljs { background: transparent; color: #24292e; }
+.hljs-comment, .hljs-quote { color: #6a737d; font-style: italic; }
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-section, .hljs-link { color: #d73a49; }
+.hljs-function .hljs-title, .hljs-title.class_, .hljs-title.function_ { color: #6f42c1; }
+.hljs-subst { color: #24292e; }
+.hljs-string, .hljs-doctag, .hljs-number, .hljs-regexp, .hljs-template-variable, .hljs-variable { color: #032f62; }
+.hljs-title, .hljs-name, .hljs-type { color: #005cc5; }
+.hljs-attr, .hljs-attribute, .hljs-symbol, .hljs-bullet { color: #e36209; }
+.hljs-built_in, .hljs-builtin-name { color: #22863a; }
+.hljs-meta { color: #22863a; font-weight: 700; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }
+pre code.hljs { display: block; overflow-x: auto; padding: 1rem; border-radius: .375rem; background:#f6f8fa; }
+code.hljs { padding: .2rem .4rem; border-radius:.25rem; background:#f6f8fa; }
+/* Responsive embed wrapper */
+.embed-wrapper { position: relative; width:100%; max-width:100%; }
+.embed-wrapper.aspect-video { padding-top: 56.25%; }
+.embed-wrapper iframe { position:absolute; top:0; left:0; width:100%; height:100%; border:0; }
+blockquote.tweet-embed { border-left: 3px solid #1DA1F2; padding-left:.75rem; color:#0f1419; background:#f5f8fa; border-radius:.25rem; }
