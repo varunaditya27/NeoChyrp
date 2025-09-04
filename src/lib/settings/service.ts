@@ -5,7 +5,7 @@
  * Persists to Prisma Setting model.
  */
 import { prisma } from '@/src/lib/db';
-import { eventBus, CoreEvents } from '@/src/lib/events';
+import { eventBus, CoreEvents } from '@/src/lib/events/index';
 
 type JsonValue = any;
 
