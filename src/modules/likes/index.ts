@@ -16,8 +16,8 @@ import { registerModule } from '../../lib/modules/registry';
 
 // Like validation schema
 export const LikeSchema = z.object({
-  userId: z.string().uuid('Valid user ID is required'),
-  postId: z.string().uuid('Valid post ID is required'),
+  userId: z.string().cuid('Valid user ID is required'),
+  postId: z.string().cuid('Valid post ID is required'),
 });
 
 export type LikeInput = z.infer<typeof LikeSchema>;// Like service functions
