@@ -1,6 +1,8 @@
 "use client";
+import { clsx } from 'clsx';
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import clsx from 'clsx';
+
+import { MathJaxLoader } from '@/src/components/math/MathJaxLoader';
 import { renderMarkdown } from '@/src/lib/markdown';
 
 // Lightweight in-house markdown editor (avoids heavy external editors to keep bundle lean)
@@ -65,7 +67,14 @@ const toolbar: ToolbarButton[] = [
   { label: 'H2', title: 'Heading 2', action: applyPrefix('##') },
   { label: 'B', title: 'Bold', action: applyWrap('**') },
   { label: 'I', title: 'Italic', action: applyWrap('*') },
-  { label: 'Code', title: 'Code', action: applyWrap('`') },
+  { label: 'Code', title: 'Inline Code', action: applyWrap('`') },
+  { label: 'Block', title: 'Code Block', action: (cur, sel) => {
+      const before = cur.slice(0, sel.start);
+      const selected = cur.slice(sel.start, sel.end) || 'console.log("hello")';
+      const after = cur.slice(sel.end);
+      const fenced = `${before && !before.endsWith('\n') ? '\n' : ''}\n\n\`\`\`ts\n${selected}\n\`\`\`\n\n`;
+      return { value: before + fenced + after, cursor: before.length + fenced.length }; }
+  },
   { label: 'Link', title: 'Link', action: (cur, sel) => {
       const before = cur.slice(0, sel.start);
       const selected = cur.slice(sel.start, sel.end) || 'text';
@@ -83,6 +92,27 @@ const toolbar: ToolbarButton[] = [
       const inserted = `${before && !before.endsWith('\n') ? '\n' : ''}---\n`;
       return { value: before + inserted + after, cursor: before.length + inserted.length };
     }
+  },
+  { label: 'Math', title: 'Inline Math', action: (cur, sel) => {
+      const before = cur.slice(0, sel.start);
+      const selected = cur.slice(sel.start, sel.end) || 'a^2 + b^2 = c^2';
+      const after = cur.slice(sel.end);
+      const inserted = `$${selected}$`;
+      return { value: before + inserted + after, cursor: before.length + inserted.length }; }
+  },
+  { label: 'Block ℳ', title: 'Math Block', action: (cur, sel) => {
+      const before = cur.slice(0, sel.start);
+      const selected = cur.slice(sel.start, sel.end) || '\n\\int_0^1 x^2 dx';
+      const after = cur.slice(sel.end);
+      const block = `${before && !before.endsWith('\n') ? '\n' : ''}$$${selected}$$\n`;
+      return { value: before + block + after, cursor: before.length + block.length }; }
+  },
+  { label: 'Embed', title: 'Video Embed', action: (cur, sel) => {
+      const before = cur.slice(0, sel.start);
+      const after = cur.slice(sel.end);
+      const sample = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+      const inserted = `${before && !before.endsWith('\n') ? '\n' : ''}${sample}\n`;
+      return { value: before + inserted + after, cursor: before.length + inserted.length }; }
   }
 ];
 
@@ -128,9 +158,14 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (!e.metaKey && !e.ctrlKey) return;
     const key = e.key.toLowerCase();
-  if (key === 'b' && toolbar[2]) { e.preventDefault(); runAction(toolbar[2]!); }
-  if (key === 'i' && toolbar[3]) { e.preventDefault(); runAction(toolbar[3]!); }
-  if (key === 'k' && toolbar[5]) { e.preventDefault(); runAction(toolbar[5]!); }
+    // Bold
+    if (key === 'b') { e.preventDefault(); const btn = toolbar.find(t => t.label === 'B'); if (btn) runAction(btn); }
+    // Italic
+    if (key === 'i') { e.preventDefault(); const btn = toolbar.find(t => t.label === 'I'); if (btn) runAction(btn); }
+    // Link
+    if (key === 'k') { e.preventDefault(); const btn = toolbar.find(t => t.label === 'Link'); if (btn) runAction(btn); }
+    // Code block (Ctrl/Cmd + Shift + C)
+    if (e.shiftKey && key === 'c') { e.preventDefault(); const btn = toolbar.find(t => t.label === 'Block'); if (btn) runAction(btn); }
   };
 
   return (
@@ -170,6 +205,7 @@ export const MarkdownEditor: React.FC<MarkdownEditorProps> = ({
       {showPreview && (
         <div className={clsx('prose max-w-none p-3 text-sm', heightClass, 'overflow-auto')} dangerouslySetInnerHTML={{ __html: html }} />
       )}
+      {showPreview && <MathJaxLoader rootSelector=".prose" />}
       {description && (
         <p className="border-t bg-gray-50 px-3 py-1 text-[11px] text-gray-500">{description}</p>
       )}
