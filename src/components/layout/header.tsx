@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/src/lib/auth/session";
+import { useSiteSettings } from '@/src/lib/settings/useSiteSettings';
 
 const Header: React.FC = () => {
   const { user, loading, signOut } = useAuth();
@@ -44,6 +45,7 @@ const Header: React.FC = () => {
     return pathname.startsWith(href);
   };
 
+  const { title } = useSiteSettings();
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between p-4">
@@ -52,7 +54,7 @@ const Header: React.FC = () => {
           <div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-sm font-bold text-white">
             N
           </div>
-          <span className="text-xl font-bold text-gray-900">NeoChyrp</span>
+          <span className="text-xl font-bold text-gray-900">{title}</span>
           <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
             alpha
           </span>
