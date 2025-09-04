@@ -5,6 +5,18 @@ import { prisma } from '@/src/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+async function deletePost(formData: FormData): Promise<void> {
+  'use server';
+  const id = String(formData.get('id'));
+  if (!id) return;
+  try {
+    const base = process.env.SITE_URL || 'http://localhost:3000';
+    await fetch(base + '/api/posts/' + id, { method: 'DELETE' });
+  } catch {
+    // ignore errors; page will re-render next load
+  }
+}
+
 export default async function PostsListPage() {
   const posts = await prisma.post.findMany({
     orderBy: { createdAt: 'desc' },
@@ -30,6 +42,7 @@ export default async function PostsListPage() {
                   <th className="px-4 py-2 font-medium text-gray-600">Status</th>
                   <th className="px-4 py-2 font-medium text-gray-600">Tags</th>
                   <th className="px-4 py-2 font-medium text-gray-600">Created</th>
+                  <th className="px-4 py-2 font-medium text-gray-600">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -40,6 +53,12 @@ export default async function PostsListPage() {
                     <td className="px-4 py-2"><span className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium capitalize">{p.visibility.toLowerCase()}</span></td>
                     <td className="max-w-xs truncate px-4 py-2 text-gray-600">{p.tags.map(t => t.tag.name).join(', ')}</td>
                     <td className="px-4 py-2 text-gray-500">{p.createdAt.toLocaleDateString()}</td>
+                    <td className="px-4 py-2">
+                      <form action={deletePost} onSubmit={(e)=>{ if(!confirm('Delete this post?')) e.preventDefault(); }}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <button type="submit" className="text-xs text-red-600 hover:underline">Delete</button>
+                      </form>
+                    </td>
                   </tr>
                 ))}
               </tbody>

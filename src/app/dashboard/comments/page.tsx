@@ -9,10 +9,17 @@ async function moderateComment(formData: FormData): Promise<void> {
   'use server';
   const id = String(formData.get('id'));
   const action = String(formData.get('action')) as 'approve' | 'spam' | 'delete';
-  if (!id) return;
-  if (action === 'approve') await prisma.comment.update({ where: { id }, data: { status: 'APPROVED' } });
-  else if (action === 'spam') await prisma.comment.update({ where: { id }, data: { status: 'SPAM' } });
-  else if (action === 'delete') await prisma.comment.update({ where: { id }, data: { status: 'DELETED' } });
+  if (!id || !action) return;
+  try {
+    const base = process.env.SITE_URL || 'http://localhost:3000';
+    await fetch(base + '/api/comments/moderate', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id, action })
+    });
+  } catch {
+    // swallow – UI will reflect on next render
+  }
 }
 
 export default async function CommentsPage() {

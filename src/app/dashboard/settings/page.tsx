@@ -1,7 +1,11 @@
 import { revalidatePath } from 'next/cache';
+import React from 'react';
 
+import ThemePreviewToggle from '@/src/components/dashboard/ThemePreviewToggle';
 import { Container } from '@/src/components/layout/Container';
 import { settingsService } from '@/src/lib/settings/service';
+
+import SettingsFormStatusBridge from './SettingsFormStatusBridge';
 
 async function saveSettings(formData: FormData): Promise<void> {
   'use server';
@@ -12,6 +16,8 @@ async function saveSettings(formData: FormData): Promise<void> {
   const defaultVisibility = String(formData.get('defaultVisibility') || 'PUBLISHED');
   await settingsService.updateSiteSettings({ title: siteTitle, tagline, theme, postsPerPage, defaultVisibility });
   revalidatePath('/');
+  revalidatePath('/api/settings/public');
+  revalidatePath('/blog');
   revalidatePath('/dashboard/settings');
 }
 
@@ -23,7 +29,8 @@ export default async function SettingsPage() {
     <div className="py-8">
       <Container>
         <h1 className="mb-6 text-2xl font-bold">Settings</h1>
-        <form action={saveSettings} className="max-w-lg space-y-4">
+  {/* Server Action form: method defaults to POST; explicit method attribute causes a React warning in Next.js 15 */}
+  <form action={saveSettings} className="max-w-lg space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Site Title</label>
             <input name="siteTitle" defaultValue={title || ''} className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
@@ -60,6 +67,11 @@ export default async function SettingsPage() {
             <span className="text-xs text-gray-500">Last updated applies immediately across site.</span>
           </div>
         </form>
+        <div className="mt-10">
+          <ThemePreviewToggle />
+        </div>
+  {/* Bridge triggers a settings refresh event after server action completes */}
+  <SettingsFormStatusBridge />
       </Container>
     </div>
   );
