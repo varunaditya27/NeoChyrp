@@ -1,78 +1,71 @@
-/**
- * Rights Module
- * -------------
- * Manages copyright and licensing information for content.
- * Supports Creative Commons licenses and custom attribution.
+/** Rights Module
+ * Manages copyright / licensing metadata and attribution strings.
  */
-
 import { z } from 'zod';
 
-import { registerModule } from '../../lib/modules/registry';
+// NOTE: Adjust these import paths if your actual project alias differs.
+import { prisma } from '@/src/lib/db';
+import { registerModule } from '@/src/lib/modules/registry';
 
-export const rightsService = {
-  getLicenseInfo(licenseId: string): { name: string; url: string; description: string } | null {
-    const licenses: Record<string, { name: string; url: string; description: string }> = {
-      'cc-by-4.0': {
-        name: 'Creative Commons Attribution 4.0',
-        url: 'https://creativecommons.org/licenses/by/4.0/',
-        description: 'You are free to share and adapt the material with attribution',
-      },
-      'cc-by-sa-4.0': {
-        name: 'Creative Commons Attribution-ShareAlike 4.0',
-        url: 'https://creativecommons.org/licenses/by-sa/4.0/',
-        description: 'You are free to share and adapt the material with attribution and same license',
-      },
-      'all-rights-reserved': {
-        name: 'All Rights Reserved',
-        url: '',
-        description: 'Traditional copyright protection',
-      },
-    };
-
-    return licenses[licenseId] || null;
+const licenseCatalog: Record<string, { name: string; url: string; description: string }> = {
+  'CC-BY-4.0': {
+    name: 'Creative Commons Attribution 4.0',
+    url: 'https://creativecommons.org/licenses/by/4.0/',
+    description: 'Share and adapt with attribution.'
   },
-
-  generateAttribution(postTitle: string, authorName: string, licenseId: string): string {
-    const license = this.getLicenseInfo(licenseId);
-    if (!license) return '';
-
-    let attribution = `"${postTitle}" by ${authorName}`;
-    if (license.url) {
-      attribution += ` is licensed under ${license.name} (${license.url})`;
-    } else {
-      attribution += ` - ${license.name}`;
-    }
-
-    return attribution;
+  'CC-BY-SA-4.0': {
+    name: 'Creative Commons Attribution-ShareAlike 4.0',
+    url: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    description: 'Adapt with attribution under identical license.'
   },
+  'ALL-RIGHTS-RESERVED': {
+    name: 'All Rights Reserved',
+    url: '',
+    description: 'Traditional copyright protection.'
+  }
 };
 
-// Register the module
+const configSchema = z.object({
+  defaultLicenseCode: z.string().default('CC-BY-4.0'),
+  showAttribution: z.boolean().default(true),
+  enablePerPostLicense: z.boolean().default(true)
+});
+
+export const rightsService = {
+  getLicenseInfo(code: string) {
+    return licenseCatalog[code] || null;
+  },
+  generateAttribution(postTitle: string, authorName: string, code: string) {
+    const lic = this.getLicenseInfo(code);
+    if (!lic) return '';
+    const base = `"${postTitle}" by ${authorName}`;
+    return lic.url ? `${base} is licensed under ${lic.name} (${lic.url})` : `${base} - ${lic.name}`;
+  },
+  async ensurePostLicense(postId: string, code: string) {
+    const licRec = await prisma.license.findUnique({ where: { code } });
+    if (!licRec) return null;
+    const existing = await prisma.postLicense.findFirst({ where: { postId, licenseId: licRec.id } });
+    if (!existing) await prisma.postLicense.create({ data: { postId, licenseId: licRec.id } });
+    return licRec;
+  },
+  async getAttribution(postId: string) {
+    const rel = await prisma.postLicense.findFirst({ where: { postId }, include: { license: true } });
+    if (!rel) return null;
+    return rel.license.url
+      ? `${rel.license.name} (${rel.license.url})`
+      : rel.license.name;
+  }
+};
+
 registerModule({
   manifest: {
     slug: 'rights',
-    name: 'Rights & Attribution',
+    name: 'Rights & Licensing',
     version: '1.0.0',
-    description: 'Copyright and licensing management for content',
+    description: 'Adds license association, catalog and attribution generation.',
     dependencies: [],
-    config: {
-      schema: z.object({
-        defaultLicense: z.string().default('all-rights-reserved'),
-        showAttribution: z.boolean().default(true),
-        enablePerPostLicense: z.boolean().default(true),
-      }),
-      defaults: {
-        defaultLicense: 'all-rights-reserved',
-        showAttribution: true,
-        enablePerPostLicense: true,
-      },
-    },
+    config: { schema: configSchema, defaults: { defaultLicenseCode: 'CC-BY-4.0', showAttribution: true, enablePerPostLicense: true } }
   },
-  async activate() {
-    console.log('[Rights] Module activated');
-  },
-
-  async deactivate() {
-    console.log('[Rights] Module deactivated');
-  },
+  async activate() { console.log('[Rights] activated'); },
+  async deactivate() { console.log('[Rights] deactivated'); }
 });

@@ -264,6 +264,8 @@ model Asset {
   checksum    String?    @unique
   storagePath String
   url         String
+  thumbnailPath String?
+  accessToken   String?   @unique
   metadata    Json?
   posts       PostAsset[]
   createdAt   DateTime   @default(now())

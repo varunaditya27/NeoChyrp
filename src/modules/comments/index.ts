@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { prisma } from '../../lib/db';
 import { eventBus, CoreEvents } from '../../lib/events';
 import { registerModule } from '../../lib/modules/registry';
+import { applyFilters } from '@/src/lib/triggers';
 
 // Comment validation schema
 export const CommentSchema = z.object({
@@ -30,7 +31,7 @@ export const commentService = {
   /**
    * Create a new comment
    */
-  async createComment(input: CommentInput) {
+  async createComment(input: CommentInput & { captchaToken?: string; captchaAnswer?: string }) {
     const validatedInput = CommentSchema.parse(input);
 
     // Check if post exists
@@ -51,6 +52,14 @@ export const commentService = {
       if (!parentComment || parentComment.postId !== validatedInput.postId) {
         throw new Error('Parent comment not found or belongs to different post');
       }
+    }
+
+    // Optional CAPTCHA validation via filter (modules can hook)
+    try {
+      const ok = await applyFilters('captcha_validate', true, input.captchaToken, input.captchaAnswer, validatedInput.postId);
+      if (!ok) throw new Error('Captcha validation failed');
+    } catch (e:any) {
+      if (e?.message?.includes('Captcha')) throw e;
     }
 
     // Create comment with initial status based on settings
@@ -236,26 +245,15 @@ registerModule({
     console.log('[Comments] Module activated');
 
     // Subscribe to post deletion events
-    eventBus.subscribe(CoreEvents.PostDeleted, async (payload) => {
-      const { postId } = payload as { postId: string };
+    eventBus.on(CoreEvents.PostDeleted, async (payload: any) => {
+      const { postId } = payload || {};
       console.log('[Comments] Cleaning up comments for deleted post:', postId);
       await prisma.comment.deleteMany({
         where: { postId },
       });
     });
 
-    // Subscribe to user deletion events
-    eventBus.subscribe(CoreEvents.UserDeleted, async (payload) => {
-      const { email } = payload as { email: string };
-      console.log('[Comments] Anonymizing comments for deleted user:', email);
-      await prisma.comment.updateMany({
-        where: { guestName: email }, // Using guestName since the schema doesn't have authorEmail
-        data: {
-          guestName: '[Deleted User]',
-          guestUrl: null,
-        },
-      });
-    });
+  // (User deletion event not implemented in CoreEvents yet; anonymization hook skipped)
   },
 
   async deactivate() {

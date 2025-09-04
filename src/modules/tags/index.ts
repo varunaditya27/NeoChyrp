@@ -392,21 +392,21 @@ registerModule({
     console.log('[Tags] Module activated');
 
     // Subscribe to post events for potential cleanup
-    eventBus.subscribe(CoreEvents.PostPublished, async (payload) => {
-      const { postId } = payload as { postId: string };
+    eventBus.on(CoreEvents.PostPublished, async (payload: any) => {
+      const { postId } = payload || {};
       const tags = await tagService.getPostTags(postId);
       console.log(`[Tags] Post ${postId} published with ${tags.length} tags`);
       // Tag counts are computed dynamically
     });
 
-    eventBus.subscribe(CoreEvents.PostUnpublished, async (payload) => {
-      const { postId } = payload as { postId: string };
+    eventBus.on(CoreEvents.PostUnpublished, async (payload: any) => {
+      const { postId } = payload || {};
       const tags = await tagService.getPostTags(postId);
       console.log(`[Tags] Post ${postId} unpublished, had ${tags.length} tags`);
       // Tag counts are computed dynamically
     });
 
-    eventBus.subscribe(CoreEvents.PostDeleted, async () => {
+  eventBus.on(CoreEvents.PostDeleted, async () => {
       // Tag associations are cascade deleted via database constraints
       // Update all tag counts to be safe
       await tagService.updateTagCounts();

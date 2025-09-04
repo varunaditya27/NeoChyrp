@@ -10,6 +10,7 @@ import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 
 import { useAuth } from "@/src/lib/auth/session";
+import { useSiteSettings } from '@/src/lib/settings/useSiteSettings';
 
 interface NavItem {
   href: string;
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
 
 export function Navbar() {
   const { user, loading } = useAuth();
+  const { title } = useSiteSettings();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -51,7 +53,7 @@ export function Navbar() {
             <div className="flex size-8 items-center justify-center rounded-lg bg-blue-600 font-bold text-white">
               N
             </div>
-            <span className="text-xl font-bold text-gray-900">NeoChyrp</span>
+            <span className="text-xl font-bold text-gray-900">{title}</span>
             <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
               alpha
             </span>

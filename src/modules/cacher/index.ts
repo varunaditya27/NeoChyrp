@@ -75,23 +75,26 @@ registerModule({
     console.log('[Cacher] Module activated');
 
     // Cache invalidation on post events
-    eventBus.subscribe(CoreEvents.PostUpdated, async (payload) => {
-      const { postId } = payload as { postId: string };
+  eventBus.on(CoreEvents.PostUpdated, async (payload: any) => {
+      const { postId } = payload || {};
+    if (!postId) return;
       console.log('[Cacher] Invalidating cache for post:', postId);
       cacheService.delete(`post:${postId}`);
       cacheService.delete(`post-rendered:${postId}`);
     });
 
-    eventBus.subscribe(CoreEvents.PostDeleted, async (payload) => {
-      const { postId } = payload as { postId: string };
+  eventBus.on(CoreEvents.PostDeleted, async (payload: any) => {
+      const { postId } = payload || {};
+    if (!postId) return;
       console.log('[Cacher] Invalidating cache for deleted post:', postId);
       cacheService.delete(`post:${postId}`);
       cacheService.delete(`post-rendered:${postId}`);
     });
 
     // Cache invalidation on comment events
-    eventBus.subscribe(CoreEvents.CommentCreated, async (payload) => {
-      const { postId } = payload as { postId: string };
+  eventBus.on(CoreEvents.CommentCreated, async (payload: any) => {
+      const { postId } = payload || {};
+    if (!postId) return;
       console.log('[Cacher] Invalidating post cache due to new comment:', postId);
       cacheService.delete(`post-comments:${postId}`);
     });

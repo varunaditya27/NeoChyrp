@@ -9,6 +9,7 @@ import { Suspense } from 'react';
 import { Container } from '@/src/components/layout/Container';
 import { prisma } from '@/src/lib/db';
 import { PostCard } from '@/src/modules/content/ui/PostCard';
+import { settingsService } from '@/src/lib/settings/service';
 
 interface BlogPageProps {
   searchParams: Promise<{
@@ -37,7 +38,8 @@ function BlogLoading() {
 
 // Blog Posts Component
 async function BlogPosts({ page, search, feather }: { page: number; search?: string; feather?: string }) {
-  const limit = 12;
+  const { postsPerPage } = await settingsService.getSiteSettings();
+  const limit = Math.min(Math.max(postsPerPage || 12, 1), 60);
   const offset = (page - 1) * limit;
 
   try {
