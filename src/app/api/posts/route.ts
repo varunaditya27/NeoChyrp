@@ -16,12 +16,18 @@ import '@/src/feathers/video';
 import '@/src/feathers/audio';
 import '@/src/feathers/uploader';
 import { ok, created, failure } from '@/src/lib/api/respond';
+import { requirePermission } from '@/src/lib/permissions';
+import { getRelatedPosts } from '@/src/lib/content/related';
+import crypto from 'crypto';
 import { featherRegistry } from '@/src/lib/feathers/registry';
 import { memoryCache } from '@/src/lib/cache/memory';
 
 export async function GET(req: NextRequest) {
+  // Expose request globally for conditional helpers (scoped within this invocation)
+  ;(globalThis as any).REQUEST = req;
   const { searchParams } = new URL(req.url);
   const render = searchParams.get('render') === '1';
+  const relatedTo = searchParams.get('relatedTo');
   const tag = searchParams.get('tag');
   const author = searchParams.get('author');
   const feather = searchParams.get('feather');
@@ -40,12 +46,17 @@ export async function GET(req: NextRequest) {
     where.tags = { some: { tag: { name: tag } } };
   }
 
-  const posts = await prisma.post.findMany({
-    where,
-    take: 20,
-    orderBy: { createdAt: 'desc' },
-    include: render ? { } : undefined
-  });
+  let posts;
+  if (relatedTo) {
+    posts = await getRelatedPosts(relatedTo, 10);
+  } else {
+    posts = await prisma.post.findMany({
+      where,
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+      include: render ? { } : undefined
+    });
+  }
 
   const list = await Promise.all(posts.map(async p => {
     let html: string | undefined;
@@ -56,11 +67,17 @@ export async function GET(req: NextRequest) {
   }));
 
   if (useCache) memoryCache.set(cacheKey, list, { ttlSeconds: 120, tags: ['posts'] });
-  return ok(list, { total: list.length });
+  const lastModified = posts[0]?.updatedAt?.toUTCString();
+  const etag = 'W/"'+crypto.createHash('sha1').update(JSON.stringify(list).slice(0,2048)).digest('hex')+'"';
+  const headers: Record<string,string> = { };
+  if (lastModified) headers['Last-Modified'] = lastModified;
+  headers['ETag'] = etag;
+  return ok(list, { total: list.length, headers });
 }
 
 export async function POST(req: NextRequest) {
   try {
+  await requirePermission(req, 'post:create');
     const data = await req.json();
     const result = await createPost({
       title: data.title,
