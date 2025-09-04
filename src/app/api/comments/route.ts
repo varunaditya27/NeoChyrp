@@ -3,27 +3,30 @@
  * Handles CRUD operations for comments and moderation
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+
+import { getDevSession } from '@/src/lib/session/devSession';
 
 import { commentService, CommentSchema } from '../../../modules/comments';
 
-import type { NextRequest } from 'next/server';
 
 
 // Request schemas
-const CreateCommentSchema = CommentSchema;
+// Base comment schema + optional captcha transport fields (not stored directly)
+const CreateCommentSchema = CommentSchema.extend({
+  captchaToken: z.string().optional(),
+  captchaAnswer: z.string().optional(),
+});
 
+// Use cuid for comment ids (matches DB) instead of uuid
 const ModerateCommentSchema = z.object({
-  commentId: z.string().uuid(),
+  commentId: z.string().cuid(),
   status: z.enum(['approved', 'rejected', 'spam']),
 });
 
 // Simple session mock - replace with actual auth later
-async function getSession(): Promise<any> {
-  // TODO: Implement actual session management
-  return null;
-}
+async function getSession(): Promise<any> { return getDevSession(); }
 
 /**
  * GET /api/comments
@@ -42,9 +45,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate UUID
+    // Validate ID (cuid)
     try {
-      z.string().uuid().parse(postId);
+      z.string().cuid().parse(postId);
     } catch {
       return NextResponse.json(
         { error: 'Invalid post ID format' },
@@ -59,6 +62,7 @@ export async function GET(request: NextRequest) {
       canSeeUnapproved = session?.user?.role === 'admin' || session?.user?.role === 'moderator';
     }
 
+    // Always show approved comments (all comments are auto-approved now)
     const comments = await commentService.getCommentsForPost(
       postId,
       canSeeUnapproved
@@ -84,27 +88,29 @@ export async function POST(request: NextRequest) {
     const session = await getSession();
 
     // If user is logged in, use their info, otherwise require manual entry
-    let commentData;
+    // Normalize incoming data to CommentSchema shape
+    const baseData: any = { ...body };
     if (session?.user) {
-      commentData = {
-        ...body,
-        authorName: session.user.displayName || session.user.username,
-        authorEmail: session.user.email,
-        authorUrl: session.user.website || '',
-      };
-    } else {
-      commentData = body;
+      // Override guestName with authenticated user's display name/username
+      baseData.guestName = session.user.displayName || session.user.username;
+      if (!baseData.guestUrl) baseData.guestUrl = '';
     }
-
-    // Validate input
-    const validatedData = CreateCommentSchema.parse(commentData);
-
-    const comment = await commentService.createComment(validatedData);
+    const validatedData = CreateCommentSchema.parse(baseData);
+    // Pass captcha fields through to service (they are stripped from DB input there)
+    const comment = await commentService.createComment({
+      body: validatedData.body,
+      guestName: validatedData.guestName,
+      guestUrl: validatedData.guestUrl,
+      postId: validatedData.postId,
+      parentId: (validatedData as any).parentId,
+      captchaToken: validatedData.captchaToken,
+      captchaAnswer: validatedData.captchaAnswer,
+    });
 
     return NextResponse.json(
       {
         comment,
-        message: 'Comment created successfully. It may require approval before being visible.'
+        message: 'Comment posted successfully!'
       },
       { status: 201 }
     );

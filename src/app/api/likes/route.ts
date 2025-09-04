@@ -3,25 +3,21 @@
  * Handles like/unlike operations and statistics
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
-import { likeService } from '../../../modules/likes';
+import { getDevSession } from '@/src/lib/session/devSession';
 
-import type { NextRequest } from 'next/server';
+import { likeService } from '../../../modules/likes';
 
 
 // Request schemas
 const ToggleLikeSchema = z.object({
-  postId: z.string().uuid('Valid post ID is required'),
-  userId: z.string().uuid('Valid user ID is required'),
+  postId: z.string().cuid('Valid post ID is required'),
 });
 
 // Simple session mock - replace with actual auth later
-async function getSession(): Promise<any> {
-  // TODO: Implement actual session management
-  return null;
-}
+async function getSession(): Promise<any> { return getDevSession(); }
 
 /**
  * GET /api/likes
@@ -31,7 +27,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const postId = searchParams.get('postId');
-    const action = searchParams.get('action') || 'status'; // 'status', 'count', 'likers'
+  const action = searchParams.get('action') || 'status'; // 'status', 'count', 'likers', 'summary'
 
     if (!postId) {
       return NextResponse.json(
@@ -40,9 +36,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate UUID
+    // Validate ID (cuid)
     try {
-      z.string().uuid().parse(postId);
+      z.string().cuid().parse(postId);
     } catch {
       return NextResponse.json(
         { error: 'Invalid post ID format' },
@@ -53,22 +49,33 @@ export async function GET(request: NextRequest) {
     const session = await getSession();
 
     if (action === 'count') {
-      // Get like count
+      // Get like count only (cache-friendly)
       const count = await likeService.getLikeCount(postId);
       return NextResponse.json({ count });
-    } else if (action === 'likers') {
+    }
+
+    if (action === 'likers') {
       // Get list of users who liked
       const limit = parseInt(searchParams.get('limit') || '10');
       const likers = await likeService.getLikers(postId, limit);
       return NextResponse.json({ likers });
-    } else {
-      // Get like status for current user
-      if (!session?.user?.id) {
-        return NextResponse.json({ liked: false, like: null });
-      }
-      const status = await likeService.getLikeStatus(session.user.id, postId);
-      return NextResponse.json(status);
     }
+
+    if (action === 'summary') {
+      // Combined status + count (single round trip)
+      const [count, status] = await Promise.all([
+        likeService.getLikeCount(postId),
+        session?.user?.id ? likeService.getLikeStatus(session.user.id, postId) : Promise.resolve({ liked: false, like: null })
+      ]);
+      return NextResponse.json({ liked: status.liked, count });
+    }
+
+    // Default: status only for current user
+    if (!session?.user?.id) {
+      return NextResponse.json({ liked: false, like: null });
+    }
+    const status = await likeService.getLikeStatus(session.user.id, postId);
+    return NextResponse.json(status);
   } catch (error) {
     console.error('Failed to fetch like data:', error);
     return NextResponse.json(
@@ -85,19 +92,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { postId, userId } = ToggleLikeSchema.parse(body);
+  const { postId } = ToggleLikeSchema.parse(body);
 
     const session = await getSession();
 
-    // Check if user is authenticated and matches the userId in request
-    if (!session?.user?.id || session.user.id !== userId) {
+  // Derive userId from session for security
+  if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       );
     }
+  const userId = session.user.id;
 
-    const result = await likeService.toggleLike({ userId, postId });
+  const result = await likeService.toggleLike({ userId, postId });
 
     // Get updated count
     const count = await likeService.getLikeCount(postId);
