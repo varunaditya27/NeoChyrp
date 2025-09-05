@@ -1,5 +1,14 @@
 /**
- * Settings Service
+ * Settingconst defaults: Record<string, JsonValue> = {
+  'site:title': 'NeoChyrp',
+  'site:tagline': 'Just another NeoChyrp site',
+  'site:theme': 'light',
+  'site:postsPerPage': 10,
+  'site:defaultVisibility': 'PUBLISHED',
+  'site:description': 'A modern, extensible blogging platform built with Next.js',
+  'site:url': 'http://localhost:3000',
+  'site:contact': ''
+};ce
  * ----------------
  * Provides typed access to site/application settings with simple in-memory caching.
  * Persists to Prisma Setting model.
@@ -50,23 +59,29 @@ export const settingsService = {
   get: load,
   set: save,
   getSiteSettings: async () => {
-    const keys = ['site:title','site:tagline','site:theme','site:postsPerPage','site:defaultVisibility'] as const;
+    const keys = ['site:title','site:tagline','site:theme','site:postsPerPage','site:defaultVisibility','site:description','site:url','site:contact'] as const;
     const loaded = await multiLoad(keys as unknown as string[]);
     return {
       title: loaded['site:title'] as string,
       tagline: loaded['site:tagline'] as string,
       theme: loaded['site:theme'] as string,
       postsPerPage: loaded['site:postsPerPage'] as number,
-      defaultVisibility: loaded['site:defaultVisibility'] as string
+      defaultVisibility: loaded['site:defaultVisibility'] as string,
+      description: loaded['site:description'] as string,
+      url: loaded['site:url'] as string,
+      contact: loaded['site:contact'] as string
     };
   },
-  updateSiteSettings: async (input: { title?: string; tagline?: string; theme?: string; postsPerPage?: number; defaultVisibility?: string }) => {
+  updateSiteSettings: async (input: { title?: string; tagline?: string; theme?: string; postsPerPage?: number; defaultVisibility?: string; description?: string; url?: string; contact?: string }) => {
     const changes: Record<string, JsonValue> = {};
     if (input.title !== undefined) { await save('site:title', input.title); changes.title = input.title; }
     if (input.tagline !== undefined) { await save('site:tagline', input.tagline); changes.tagline = input.tagline; }
     if (input.theme !== undefined) { await save('site:theme', input.theme); changes.theme = input.theme; }
     if (input.postsPerPage !== undefined) { await save('site:postsPerPage', input.postsPerPage); changes.postsPerPage = input.postsPerPage; }
     if (input.defaultVisibility !== undefined) { await save('site:defaultVisibility', input.defaultVisibility); changes.defaultVisibility = input.defaultVisibility; }
+    if (input.description !== undefined) { await save('site:description', input.description); changes.description = input.description; }
+    if (input.url !== undefined) { await save('site:url', input.url); changes.url = input.url; }
+    if (input.contact !== undefined) { await save('site:contact', input.contact); changes.contact = input.contact; }
     if (Object.keys(changes).length) await eventBus.emit(CoreEvents.SettingsUpdated, { changes });
     return settingsService.getSiteSettings();
   },
