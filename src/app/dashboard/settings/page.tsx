@@ -5,73 +5,86 @@ import ThemePreviewToggle from '@/src/components/dashboard/ThemePreviewToggle';
 import { Container } from '@/src/components/layout/Container';
 import { settingsService } from '@/src/lib/settings/service';
 
+import SettingsForm from './SettingsForm';
 import SettingsFormStatusBridge from './SettingsFormStatusBridge';
+import SettingsSuccessNotification from './SettingsSuccessNotification';
 
 async function saveSettings(formData: FormData): Promise<void> {
   'use server';
   const siteTitle = String(formData.get('siteTitle') || 'NeoChyrp');
   const tagline = String(formData.get('tagline') || '');
+  const description = String(formData.get('description') || '');
+  const url = String(formData.get('url') || '');
+  const contact = String(formData.get('contact') || '');
   const theme = String(formData.get('theme') || 'light');
   const postsPerPage = parseInt(String(formData.get('postsPerPage')||'10'),10) || 10;
   const defaultVisibility = String(formData.get('defaultVisibility') || 'PUBLISHED');
-  await settingsService.updateSiteSettings({ title: siteTitle, tagline, theme, postsPerPage, defaultVisibility });
+  await settingsService.updateSiteSettings({
+    title: siteTitle,
+    tagline,
+    description,
+    url,
+    contact,
+    theme,
+    postsPerPage,
+    defaultVisibility
+  });
+
+  // Comprehensive revalidation to ensure all pages reflect the changes
+  revalidatePath('/', 'layout'); // Revalidate the root layout
   revalidatePath('/');
   revalidatePath('/api/settings/public');
+  revalidatePath('/api/settings');
   revalidatePath('/blog');
   revalidatePath('/dashboard/settings');
+  revalidatePath('/dashboard');
+  revalidatePath('/tags');
+  revalidatePath('/categories');
 }
 
 export const dynamic = 'force-dynamic';
 
 export default async function SettingsPage() {
-  const { title, tagline, theme, postsPerPage, defaultVisibility } = await settingsService.getSiteSettings();
+  const { title, tagline, theme, postsPerPage, defaultVisibility, description, url, contact } = await settingsService.getSiteSettings();
   return (
     <div className="py-8">
       <Container>
-        <h1 className="mb-6 text-2xl font-bold">Settings</h1>
-  {/* Server Action form: method defaults to POST; explicit method attribute causes a React warning in Next.js 15 */}
-  <form action={saveSettings} className="max-w-lg space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium">Site Title</label>
-            <input name="siteTitle" defaultValue={title || ''} className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Tagline</label>
-            <input name="tagline" defaultValue={tagline || ''} className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-medium">Theme</label>
-              <select name="theme" defaultValue={theme} className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="auto">Auto</option>
-              </select>
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">Posts per Page</label>
-              <input type="number" min={1} max={100} name="postsPerPage" defaultValue={postsPerPage} className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium">Default Post Visibility</label>
-            <select name="defaultVisibility" defaultValue={defaultVisibility} className="w-full rounded border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-              <option value="DRAFT">Draft</option>
-              <option value="PUBLISHED">Published</option>
-              <option value="PRIVATE">Private</option>
-              <option value="ARCHIVED">Archived</option>
-            </select>
-          </div>
-          <div className="flex items-center gap-4">
-            <button type="submit" className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700">Save</button>
-            <span className="text-xs text-gray-500">Last updated applies immediately across site.</span>
-          </div>
-        </form>
-        <div className="mt-10">
-          <ThemePreviewToggle />
+        <h1 className="mb-6 text-2xl font-bold">Site Configuration</h1>
+        <div className="mb-8">
+          <p className="text-gray-600">
+            Configure your site&apos;s basic settings. Changes will be applied immediately across your entire site.
+          </p>
         </div>
-  {/* Bridge triggers a settings refresh event after server action completes */}
-  <SettingsFormStatusBridge />
+
+        <div className="space-y-8">
+          <div>
+            <h2 className="mb-4 text-lg font-semibold">General Settings</h2>
+            <SettingsForm
+              title={title}
+              tagline={tagline}
+              description={description}
+              url={url}
+              contact={contact}
+              theme={theme}
+              postsPerPage={postsPerPage}
+              defaultVisibility={defaultVisibility}
+              action={saveSettings}
+            />
+          </div>
+
+          <hr className="border-gray-200" />
+
+          <div>
+            <h2 className="mb-4 text-lg font-semibold">Theme Preview</h2>
+            <ThemePreviewToggle />
+          </div>
+        </div>
+
+        {/* Bridge triggers a settings refresh event after server action completes */}
+        <SettingsFormStatusBridge />
+
+        {/* Success notification */}
+        <SettingsSuccessNotification />
       </Container>
     </div>
   );

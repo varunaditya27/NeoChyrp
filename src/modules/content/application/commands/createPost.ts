@@ -100,7 +100,9 @@ export async function createPost(raw: CreatePostInput) {
   }
 
   if (input.licenseCode) {
-    rightsService.ensurePostLicense(post.id, input.licenseCode).catch(()=>{});
+    rightsService.setCopyrightInfo(post.id, {
+      license: rightsService.getLicense(input.licenseCode) || undefined
+    }).catch(()=>{});
   }
   return { id: post.id, slug: post.slug };
 }

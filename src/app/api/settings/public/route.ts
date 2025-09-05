@@ -6,8 +6,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-  const { title, tagline, theme } = await settingsService.getSiteSettings();
-  return ok({ title, tagline, theme });
+  const { title, tagline, theme, description, url } = await settingsService.getSiteSettings();
+  return ok({ title, tagline, theme, description, url });
   } catch (e:any) {
     return failure(e.message || 'Error', 500);
   }

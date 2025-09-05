@@ -34,7 +34,7 @@ export async function GET(req: NextRequest, context: any) {
       postViewsService.registerView(post.id, ip).catch(()=>{});
     }
 
-  const attribution = await rightsService.getAttribution(post.id);
+  const attribution = await rightsService.generateAttributionString(post.id, post.title || undefined);
   return ok({ id: post.id, slug: post.slug, title: post.title, excerpt: post.excerpt, feather: post.feather, featherData: post.featherData, html, publishedAt: post.publishedAt, attribution });
   } catch (e:any) {
     return failure(e.message || 'Error', 500);
