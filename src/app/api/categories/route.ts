@@ -5,7 +5,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { getDevSession } from '@/src/lib/session/devSession';
+import { getRequestUser } from '@/src/lib/auth/requestUser';
 
 import { categoriesService, CategorySchema } from '../../../modules/categories';
 
@@ -13,9 +13,6 @@ import { categoriesService, CategorySchema } from '../../../modules/categories';
 // Request schemas
 const CreateCategorySchema = CategorySchema;
 const UpdateCategorySchema = CategorySchema.partial();
-
-// Simple session mock - replace with actual auth later
-async function getSession(): Promise<any> { return getDevSession(); }
 
 /**
  * GET /api/categories
@@ -56,8 +53,8 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user) {
+    const user = await getRequestUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
@@ -65,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // TODO: Check if user has permission to create categories
-    // if (!hasPermission(session.user, 'manage_categories')) {
+    // if (!hasPermission(user, 'manage_categories')) {
     //   return NextResponse.json(
     //     { success: false, error: 'Insufficient permissions' },
     //     { status: 403 }
@@ -117,8 +114,8 @@ export async function POST(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user) {
+    const user = await getRequestUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
@@ -185,8 +182,8 @@ export async function PUT(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session?.user) {
+    const user = await getRequestUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }

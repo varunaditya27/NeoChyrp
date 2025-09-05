@@ -6,7 +6,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
-import { getDevSession } from '@/src/lib/session/devSession';
+import { getRequestUser } from '@/src/lib/auth/requestUser';
 
 import { likeService } from '../../../modules/likes';
 
@@ -16,8 +16,11 @@ const ToggleLikeSchema = z.object({
   postId: z.string().cuid('Valid post ID is required'),
 });
 
-// Simple session mock - replace with actual auth later
-async function getSession(): Promise<any> { return getDevSession(); }
+// Get authenticated user from request
+async function getSession(request: NextRequest): Promise<any> { 
+  const user = await getRequestUser(request);
+  return user ? { user } : null;
+}
 
 /**
  * GET /api/likes
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const session = await getSession();
+    const session = await getSession(request);
 
     if (action === 'count') {
       // Get like count only (cache-friendly)

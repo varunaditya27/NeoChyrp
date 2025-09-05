@@ -60,9 +60,9 @@ class FeatherRegistryImpl {
     generateExcerpt: FeatherExcerptGenerator
   ): void {
     if (this.feathers.has(manifest.slug)) {
-      throw new Error(`Feather ${manifest.slug} is already registered`);
+      // In dev / hot-reload scenarios we silently skip duplicates to prevent crashes
+      return;
     }
-
     this.feathers.set(manifest.slug, {
       manifest: manifest as FeatherManifest,
       render: render as FeatherRenderer,

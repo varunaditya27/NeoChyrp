@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { getSession } from '../../../lib/auth';
+import { getSession } from '@/src/lib/auth';
 import { tagService, TagSchema } from '../../../modules/tags';
 
 import type { NextRequest } from 'next/server';

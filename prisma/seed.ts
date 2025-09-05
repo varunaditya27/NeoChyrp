@@ -26,6 +26,7 @@ async function ensureOwner() {
       email: 'owner@example.com',
       username: 'owner',
       displayName: 'Site Owner',
+  password: '$2a$10$seedplaceholderhashedpass1234567890abcdefabcdefabcdef', // TODO: replace with secure hash or rotate
       role: UserRole.OWNER
     }
   });

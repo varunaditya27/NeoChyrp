@@ -41,6 +41,8 @@ export async function POST(req: Request) {
         email: sUser.email || `${sUser.id}@placeholder.local`,
         username,
         displayName: sUser.user_metadata?.full_name || sUser.email || username,
+        // Placeholder random hash (bcrypt of 'changeme') - user should set password via account settings later.
+        password: '$2a$10$Q9yNzO1fF7hLJH2GdY2wUeJvR2Oa7Xf1XJ8aJYhE5qk4Y8p2b7z9e',
         role: isFirst ? 'OWNER' : 'USER'
       }
     });

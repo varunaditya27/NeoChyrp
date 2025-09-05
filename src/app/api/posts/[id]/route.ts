@@ -47,8 +47,14 @@ export async function PATCH(req: NextRequest, context: any) {
     const raw = context?.params ? await context.params : {};
     const id = raw.id || context?.params?.id;
     if (!id) return failure('Missing id', 400);
-    const data = await req.json();
-    const post = await prisma.post.update({ where:{ id: String(id) }, data:{ title: data.title, body: data.body, visibility: data.visibility } });
+  const data = await req.json();
+  const update: any = {};
+  if (data.title !== undefined) update.title = data.title;
+  if (data.body !== undefined) update.body = data.body;
+  if (data.visibility !== undefined) update.visibility = data.visibility;
+  if (data.featherData !== undefined) update.featherData = data.featherData;
+  if (data.excerpt !== undefined) update.excerpt = data.excerpt;
+  const post = await prisma.post.update({ where:{ id: String(id) }, data: update });
     return ok(post);
   } catch (e:any) {
     return failure(e.message || 'Error', e.status || 500);

@@ -6,11 +6,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
-import { getDevSession } from '@/src/lib/session/devSession';
+import { getRequestUser } from '@/src/lib/auth/requestUser';
 
 import { commentService, CommentSchema } from '../../../modules/comments';
-
-
 
 // Request schemas
 // Base comment schema + optional captcha transport fields (not stored directly)
@@ -24,9 +22,6 @@ const ModerateCommentSchema = z.object({
   commentId: z.string().cuid(),
   status: z.enum(['approved', 'rejected', 'spam']),
 });
-
-// Simple session mock - replace with actual auth later
-async function getSession(): Promise<any> { return getDevSession(); }
 
 /**
  * GET /api/comments
@@ -58,8 +53,8 @@ export async function GET(request: NextRequest) {
     // Check if user can see unapproved comments (admin/moderator only)
     let canSeeUnapproved = false;
     if (includeUnapproved) {
-      const session = await getSession();
-      canSeeUnapproved = session?.user?.role === 'admin' || session?.user?.role === 'moderator';
+      const user = await getRequestUser(request);
+      canSeeUnapproved = user?.role === 'admin' || user?.role === 'moderator';
     }
 
     // Always show approved comments (all comments are auto-approved now)
@@ -85,14 +80,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const session = await getSession();
+    const user = await getRequestUser(request);
 
     // If user is logged in, use their info, otherwise require manual entry
     // Normalize incoming data to CommentSchema shape
     const baseData: any = { ...body };
-    if (session?.user) {
+    if (user) {
       // Override guestName with authenticated user's display name/username
-      baseData.guestName = session.user.displayName || session.user.username;
+      baseData.guestName = user.displayName || user.username;
       if (!baseData.guestUrl) baseData.guestUrl = '';
     }
     const validatedData = CreateCommentSchema.parse(baseData);
@@ -137,10 +132,10 @@ export async function POST(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getSession();
+    const user = await getRequestUser(request);
 
     // Check permissions
-    if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'moderator')) {
+    if (!user || (user.role !== 'admin' && user.role !== 'moderator')) {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }
@@ -179,10 +174,10 @@ export async function PATCH(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
+    const user = await getRequestUser(request);
 
     // Check permissions
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!user || user.role !== 'admin') {
       return NextResponse.json(
         { error: 'Insufficient permissions' },
         { status: 403 }

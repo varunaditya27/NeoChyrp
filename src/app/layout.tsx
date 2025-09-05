@@ -5,7 +5,7 @@
 import '@/src/styles/globals.css';
 import '@/src/styles/highlight.css';
 import { Footer } from '@/src/components/layout/footer';
-import { Header } from '@/src/components/layout/header';
+import { Navbar } from '@/src/components/layout/Navbar';
 import ThemeClient from '@/src/components/ThemeClient';
 import { AuthProvider } from '@/src/lib/auth/session';
 import { settingsService } from '@/src/lib/settings/service';
@@ -31,7 +31,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   <html lang="en" className="h-full" data-theme={initialTheme} data-theme-preview={previewTheme ? '1':'0'}>
       <body className="flex h-full flex-col bg-gray-50">
         <AuthProvider>
-          <Header />
+          <Navbar />
           <main className="flex-1">
             {children}
           </main>

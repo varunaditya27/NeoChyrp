@@ -26,6 +26,11 @@ export const CommentsThread: React.FC<CommentsThreadProps> = ({ postId }) => {
   const [submitting, setSubmitting] = useState(false);
   const [captcha, setCaptcha] = useState<{ token?: string; answer?: string }>({});
 
+  // Stable onChange handler to prevent infinite re-renders
+  const handleCaptchaChange = useCallback((token: string, answer: string) => {
+    setCaptcha({ token, answer });
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true); setError(null);
     try {
@@ -141,7 +146,7 @@ export const CommentsThread: React.FC<CommentsThreadProps> = ({ postId }) => {
             className="w-full resize-none rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
-        <Maptcha onChange={(token, answer) => setCaptcha({ token, answer })} />
+        <Maptcha onChange={handleCaptchaChange} />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button

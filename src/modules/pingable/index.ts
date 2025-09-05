@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 
-import { prisma } from '../../lib/db';
+import { prisma } from '@/src/lib/db';
 import { eventBus, CoreEvents } from '../../lib/events';
 import { registerModule, type ModuleContext } from '../../lib/modules/registry';
 

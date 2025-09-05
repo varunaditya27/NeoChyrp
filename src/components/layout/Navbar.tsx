@@ -11,11 +11,15 @@ import React, { useState } from "react";
 
 import { useAuth } from "@/src/lib/auth/session";
 import { useSiteSettings } from '@/src/lib/settings/useSiteSettings';
+import { canAccessAdmin, canAccessAuthorDashboard, isRegularUser } from "@/src/lib/auth/adminAccess";
+import AuthModal from "../AuthModal";
 
 interface NavItem {
   href: string;
   label: string;
   adminOnly?: boolean;
+  authorOnly?: boolean;
+  userOnly?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -23,14 +27,24 @@ const navItems: NavItem[] = [
   { href: "/blog", label: "Blog" },
   { href: "/tags", label: "Tags" },
   { href: "/categories", label: "Categories" },
-  { href: "/dashboard", label: "Dashboard", adminOnly: true },
+  { href: "/admin", label: "Admin", adminOnly: true },
+  { href: "/author", label: "Dashboard", authorOnly: true },
+  { href: "/user", label: "Dashboard", userOnly: true },
 ];
 
 export function Navbar() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const { title } = useSiteSettings();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+
+  const handleAuthClick = (mode: "login" | "register") => {
+    setAuthMode(mode);
+    setAuthModalOpen(true);
+    setIsMobileMenuOpen(false);
+  };
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -39,7 +53,13 @@ export function Navbar() {
 
   const filteredNavItems = navItems.filter(item => {
     if (item.adminOnly) {
-      return user; // Only show admin items if user is logged in
+      return canAccessAdmin(user); // Only show admin items if user is admin
+    }
+    if (item.authorOnly) {
+      return canAccessAuthorDashboard(user) && !canAccessAdmin(user); // Only show author dashboard if not admin
+    }
+    if (item.userOnly) {
+      return isRegularUser(user); // Only show user dashboard for regular users
     }
     return true;
   });
@@ -83,26 +103,32 @@ export function Navbar() {
             ) : user ? (
               <div className="flex items-center space-x-2">
                 <div className="flex size-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-                  {user.email?.charAt(0).toUpperCase() || "U"}
+                  {(user.displayName || user.username || user.email)?.charAt(0).toUpperCase() || "U"}
                 </div>
                 <span className="text-sm text-gray-700">
-                  {user.user_metadata?.full_name || user.email}
+                  {user.displayName || user.username || user.email}
                 </span>
+                <button
+                  onClick={logout}
+                  className="ml-4 text-sm font-medium text-gray-600 hover:text-gray-900"
+                >
+                  Logout
+                </button>
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <Link
-                  href="/login"
+                <button
+                  onClick={() => handleAuthClick("login")}
                   className="text-sm font-medium text-gray-600 hover:text-gray-900"
                 >
                   Login
-                </Link>
-                <Link
-                  href="/register"
+                </button>
+                <button
+                  onClick={() => handleAuthClick("register")}
                   className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                 >
                   Sign Up
-                </Link>
+                </button>
               </div>
             )}
           </div>
@@ -158,29 +184,36 @@ export function Navbar() {
                   <div className="px-3 py-2">
                     <div className="flex items-center space-x-3">
                       <div className="flex size-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
-                        {user.email?.charAt(0).toUpperCase() || "U"}
+                        {(user.displayName || user.username || user.email)?.charAt(0).toUpperCase() || "U"}
                       </div>
                       <span className="text-sm text-gray-700">
-                        {user.user_metadata?.full_name || user.email}
+                        {user.displayName || user.username || user.email}
                       </span>
                     </div>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="mt-2 block text-sm font-medium text-gray-600 hover:text-gray-900"
+                    >
+                      Logout
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-1 px-3 py-2">
-                    <Link
-                      href="/login"
-                      onClick={() => setIsMobileMenuOpen(false)}
+                    <button
+                      onClick={() => handleAuthClick("login")}
                       className="block text-sm font-medium text-gray-600 hover:text-gray-900"
                     >
                       Login
-                    </Link>
-                    <Link
-                      href="/register"
-                      onClick={() => setIsMobileMenuOpen(false)}
+                    </button>
+                    <button
+                      onClick={() => handleAuthClick("register")}
                       className="block rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                     >
                       Sign Up
-                    </Link>
+                    </button>
                   </div>
                 )}
               </div>
@@ -188,6 +221,13 @@ export function Navbar() {
           </div>
         )}
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal
+        open={authModalOpen}
+        mode={authMode}
+        onClose={() => setAuthModalOpen(false)}
+      />
     </nav>
   );
 }

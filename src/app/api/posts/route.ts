@@ -1,97 +1,190 @@
-/* eslint-disable import/order */
 /**
- * REST-style route handler for posts collection.
- * - GET: list posts (public, paginated) -> TODO filters.
- * - POST: create draft/published post (auth stub currently).
+ * Posts API
+ * Create and manage posts with strict access controls
  */
+
+import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { prisma } from '@/src/lib/db';
-import { createPost } from '@/src/modules/content/application/commands/createPost';
-import '@/src/lib/bootstrap';
-import '@/src/feathers/text';
-import '@/src/feathers/photo';
-import '@/src/feathers/quote';
-import '@/src/feathers/link';
-import '@/src/feathers/video';
-import '@/src/feathers/audio';
-import '@/src/feathers/uploader';
-import { ok, created, failure } from '@/src/lib/api/respond';
-import { requirePermission } from '@/src/lib/permissions';
-import { getRelatedPosts } from '@/src/lib/content/related';
-import crypto from 'crypto';
+
+import { getRequestUser } from '@/src/lib/auth/requestUser';
 import { featherRegistry } from '@/src/lib/feathers/registry';
-import { memoryCache } from '@/src/lib/cache/memory';
 
-export async function GET(req: NextRequest) {
-  // Expose request globally for conditional helpers (scoped within this invocation)
-  ;(globalThis as any).REQUEST = req;
-  const { searchParams } = new URL(req.url);
-  const render = searchParams.get('render') === '1';
-  const relatedTo = searchParams.get('relatedTo');
-  const tag = searchParams.get('tag');
-  const author = searchParams.get('author');
-  const feather = searchParams.get('feather');
-  const useCache = searchParams.get('cache') === '1';
+import { canCreateContent } from '@/src/lib/auth/adminAccess';
+import { prisma } from '@/src/lib/db';
 
-  const cacheKey = `posts:list:v1:${render}:${tag||''}:${author||''}:${feather||''}`;
-  if (useCache) {
-    const cached = memoryCache.get(cacheKey);
-    if (cached) return ok(cached as any, { total: (cached as any)?.length });
-  }
 
-  const where:any = {};
-  if (author) where.authorId = author;
-  if (feather) where.feather = feather;
-  if (tag) {
-    where.tags = { some: { tag: { name: tag } } };
-  }
-
-  let posts;
-  if (relatedTo) {
-    posts = await getRelatedPosts(relatedTo, 10);
-  } else {
-    posts = await prisma.post.findMany({
-      where,
-      take: 20,
-      orderBy: { createdAt: 'desc' },
-      include: render ? { } : undefined
+export async function GET() {
+  try {
+    const posts = await prisma.post.findMany({
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+          },
+        },
+        _count: {
+          select: {
+            comments: true,
+            likes: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
+
+    return NextResponse.json({
+      success: true,
+      posts: posts.map(post => ({
+        ...post,
+        status: (post.visibility || 'published').toLowerCase(),
+        body: post.body ? post.body.substring(0, 200) + '...' : '',
+      }))
+    });
+  } catch (error) {
+    console.error('Get posts error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch posts' },
+      { status: 500 }
+    );
   }
-
-  const list = await Promise.all(posts.map(async p => {
-    let html: string | undefined;
-    if (render && p.feather && p.featherData) {
-      try { html = await featherRegistry.renderPost(p.feather, p.featherData); } catch {/* ignore */}
-    }
-    return { id: p.id, slug: p.slug, title: p.title, excerpt: p.excerpt, publishedAt: p.publishedAt, feather: p.feather, html };
-  }));
-
-  if (useCache) memoryCache.set(cacheKey, list, { ttlSeconds: 120, tags: ['posts'] });
-  const lastModified = posts[0]?.updatedAt?.toUTCString();
-  const etag = 'W/"'+crypto.createHash('sha1').update(JSON.stringify(list).slice(0,2048)).digest('hex')+'"';
-  const headers: Record<string,string> = { };
-  if (lastModified) headers['Last-Modified'] = lastModified;
-  headers['ETag'] = etag;
-  return ok(list, { total: list.length, headers });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-  await requirePermission(req, 'post:create');
-    const data = await req.json();
-    const result = await createPost({
-      title: data.title,
-      body: data.body,
-      authorId: data.authorId || 'owner', // TODO: derive from session
-      feather: data.feather || 'TEXT',
-      featherData: data.featherData,
-      visibility: data.visibility || 'DRAFT',
-      publishNow: !!data.publishNow,
-  tags: data.tags,
-  licenseCode: data.licenseCode
+  // Unified auth token retrieval (supports legacy cookies)
+  const user = await getRequestUser(request);
+  if (!user) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+
+    if (!user || !canCreateContent(user)) {
+      return NextResponse.json(
+        { success: false, message: 'Insufficient permissions' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { title, slug, body: content, excerpt, feather, visibility, publishedAt, featherData } = body;
+
+    if (!title) {
+      return NextResponse.json(
+        { success: false, message: 'Title is required' },
+        { status: 400 }
+      );
+    }
+
+    // Generate slug if not provided
+    const finalSlug = slug || title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .trim();
+
+    // Check if slug already exists
+    const existingPost = await prisma.post.findUnique({
+      where: { slug: finalSlug },
     });
-    return created(result);
-  } catch (e:any) {
-    return failure(e.message || 'Failed to create post', e.status || 400);
+
+    if (existingPost) {
+      return NextResponse.json(
+        { success: false, message: 'A post with this slug already exists' },
+        { status: 400 }
+      );
+    }
+
+    // Create the post
+    // Normalize feather (default TEXT) and visibility
+    const normalizedFeather = (feather || 'TEXT').toString().toUpperCase();
+    const allowedFeathers = ['TEXT','PHOTO','QUOTE','LINK','VIDEO','AUDIO','UPLOADER'];
+    const finalFeather = allowedFeathers.includes(normalizedFeather) ? normalizedFeather : 'TEXT';
+
+  // Default visibility: PUBLISHED (aligns with Prisma schema default) unless explicitly provided
+  const normalizedVisibility = (visibility || 'PUBLISHED').toString().toUpperCase();
+    const allowedVisibility = ['DRAFT','SCHEDULED','PUBLISHED','PRIVATE','ARCHIVED'];
+    const finalVisibility = allowedVisibility.includes(normalizedVisibility) ? normalizedVisibility : 'DRAFT';
+
+    // Validate / sanitize featherData if present
+    let sanitizedFeatherData: any = null;
+    if (featherData && typeof featherData === 'object') {
+      try {
+        const featherSlug = finalFeather.toLowerCase();
+        const reg = featherRegistry.getFeather(featherSlug as any);
+        if (reg && reg.manifest && (reg.manifest as any).schema) {
+          sanitizedFeatherData = (reg.manifest as any).schema.parse(featherData);
+        } else {
+          sanitizedFeatherData = featherData;
+        }
+      } catch (e: any) {
+        return NextResponse.json({ success: false, message: 'Invalid feather data: ' + e.message }, { status: 400 });
+      }
+    }
+
+    // For TEXT feather we still require content (body or markdown), for others allow absence of body
+    if (finalFeather === 'TEXT' && (!content || typeof content !== 'string' || !content.trim())) {
+      return NextResponse.json(
+        { success: false, message: 'Content body is required for text posts' },
+        { status: 400 }
+      );
+    }
+    if (finalFeather !== 'TEXT' && !sanitizedFeatherData) {
+      // Provide a clearer error when media post lacks payload
+      return NextResponse.json(
+        { success: false, message: `Feather data is required for ${finalFeather.toLowerCase()} posts` },
+        { status: 400 }
+      );
+    }
+
+    // Derive excerpt: prefer explicit excerpt, then body substring (text), else feather generator
+    let finalExcerpt: string | undefined = excerpt;
+    if (!finalExcerpt) {
+      if (content && typeof content === 'string' && content.trim()) {
+        finalExcerpt = content.substring(0, 200) + (content.length > 200 ? '...' : '');
+      } else if (sanitizedFeatherData) {
+        try {
+          finalExcerpt = featherRegistry.generateExcerpt(finalFeather.toLowerCase(), sanitizedFeatherData) || undefined;
+        } catch {
+          // ignore excerpt generation failure
+        }
+      }
+    }
+
+    const post = await prisma.post.create({
+      data: {
+        title,
+        slug: finalSlug,
+        body: content || null,
+        excerpt: finalExcerpt || null,
+        feather: finalFeather as any,
+        featherData: sanitizedFeatherData,
+        visibility: finalVisibility as any,
+        publishedAt: finalVisibility === 'PUBLISHED' ? (publishedAt ? new Date(publishedAt) : new Date()) : null,
+        authorId: user.id,
+      },
+      include: {
+        author: {
+          select: {
+            id: true,
+            username: true,
+            displayName: true,
+          },
+        },
+      },
+    });
+
+    // Safety log (shouldn't happen with new validation)
+    if (finalFeather !== 'TEXT' && !sanitizedFeatherData) {
+      console.warn(`Post ${post.id} created with feather ${finalFeather} but no featherData payload (unexpected).`);
+    }
+
+    return NextResponse.json({ success: true, post, message: 'Post created successfully' });
+  } catch (error) {
+    console.error('Create post error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to create post' },
+      { status: 500 }
+    );
   }
 }

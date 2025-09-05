@@ -3,7 +3,7 @@
  * Simple session management for the blog
  */
 
-import { prisma } from './db';
+import { prisma } from '@/src/lib/db';
 
 // Simple session type
 export interface Session {

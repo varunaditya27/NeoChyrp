@@ -6,7 +6,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
-import { getDevSession } from '@/src/lib/session/devSession';
+import { getRequestUser } from '@/src/lib/auth/requestUser';
 
 import { categoriesService } from '../../../../../modules/categories';
 
@@ -19,9 +19,6 @@ const AssignPostSchema = z.object({
   action: z.enum(['assign', 'remove']).default('assign'),
 });
 
-// Simple session mock - replace with actual auth later
-async function getSession(): Promise<any> { return getDevSession(); }
-
 /**
  * POST /api/categories/[slug]/posts
  * Assign or remove a post from a category
@@ -31,8 +28,8 @@ export async function POST(
   { params }: RouteParams
 ) {
   try {
-    const session = await getSession();
-    if (!session?.user) {
+    const user = await getRequestUser(request);
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },
         { status: 401 }
