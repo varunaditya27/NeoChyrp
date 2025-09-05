@@ -1,73 +1,114 @@
 "use client";
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
-import { createSupabaseBrowserClient } from './supabase-client';
-
-import type { Session, User } from '@supabase/supabase-js';
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  displayName: string;
+  role: string;
+  avatarUrl?: string;
+  bio?: string;
+  createdAt: string;
+}
 
 interface AuthContextValue {
-  session: Session | null;
   user: User | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Memoize client so we don't recreate it every render (prevents repeated auth subscriptions)
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const lastSyncedToken = useRef<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data }) => {
-      const sess = data.session ?? null;
-      setSession(sess);
-      setLoading(false);
-      if (sess?.access_token) await syncUserIfNeeded('INITIAL_LOAD', sess.access_token);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, sess) => {
-      setSession(sess);
-      // Only sync on meaningful events; avoid spamming on every render
-      if (sess?.access_token && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-        await syncUserIfNeeded(event, sess.access_token);
-      }
-      if (event === 'SIGNED_OUT') {
-        lastSyncedToken.current = null;
-      }
-    });
-    return () => { sub.subscription.unsubscribe(); };
-  }, [supabase]);
+    checkAuthStatus();
+  }, []);
 
-  async function syncUserIfNeeded(reason: string, accessToken: string) {
-    if (lastSyncedToken.current === accessToken) return; // dedupe identical token
+  const checkAuthStatus = async () => {
     try {
-      await fetch('/api/auth/sync', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}`, 'X-Sync-Reason': reason } });
-      lastSyncedToken.current = accessToken;
-    } catch (e) {
-       
-      console.warn('User sync failed', e);
-    }
-  }
+      setLoading(true);
+      const response = await fetch('/api/auth/me', {
+        credentials: 'include'
+      });
 
-  const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setUser(data.user);
+        }
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const login = async (username: string, password: string) => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include'
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setUser(data.user);
+        return { success: true };
+      } else {
+        return { success: false, error: data.error };
+      }
+    } catch (error) {
+      return { success: false, error: 'Login failed' };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still clear user state even if API call fails
+      setUser(null);
+    }
+  };
+
+  const refreshUser = async () => {
+    await checkAuthStatus();
+  };
+
+  const value = {
+    user,
+    loading,
+    login,
+    logout,
+    refreshUser
+  };
 
   return (
-    <AuthContext.Provider value={{ session, user: session?.user ?? null, loading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
-}
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

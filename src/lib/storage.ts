@@ -7,7 +7,8 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-export const MEDIA_BUCKET = 'media';
+// Allow overriding the bucket via env (no spaces recommended). Default: 'media'
+export const MEDIA_BUCKET = (process.env.NEXT_PUBLIC_STORAGE_BUCKET || 'media').trim();
 
 export function createSupabaseServiceClient() {
   if (!SUPABASE_URL || !SERVICE_KEY) {
@@ -19,6 +20,9 @@ export function createSupabaseServiceClient() {
 }
 
 export function publicAssetUrl(path: string) {
-  const url = SUPABASE_URL.replace(/\/$/, '') + `/storage/v1/object/public/${MEDIA_BUCKET}/${encodeURI(path)}`;
-  return url;
+  const base = SUPABASE_URL.replace(/\/$/, '');
+  // encode each segment individually (bucket names should not contain spaces, but defensively encode)
+  const bucket = encodeURIComponent(MEDIA_BUCKET);
+  const objectPath = path.split('/').map(encodeURIComponent).join('/');
+  return `${base}/storage/v1/object/public/${bucket}/${objectPath}`;
 }

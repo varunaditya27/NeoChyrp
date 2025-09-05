@@ -56,9 +56,19 @@ const photoFields = [
 
 // Render function
 async function renderPhoto(payload: PhotoFeatherPayload): Promise<string> {
-  // TODO: Fetch image details from database using imageId
-  const imageUrl = `/api/assets/${payload.imageId}`;
+  // Handle both asset ID (preferred) and full URL (legacy)
+  let imageUrl: string;
+  if (payload.imageId.startsWith('http')) {
+    // Full URL stored (legacy case)
+    imageUrl = payload.imageId;
+  } else {
+    // Asset ID stored (preferred case)
+    imageUrl = `/api/assets/${payload.imageId}`;
+  }
+
   const altText = payload.altText || payload.caption || 'Photo';
+
+  console.log('Photo feather rendering:', { imageId: payload.imageId, imageUrl });
 
   let html = `<div class="photo-post">`;
 
