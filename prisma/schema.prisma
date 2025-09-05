@@ -62,6 +62,7 @@ model Post {
   metas        PostMeta[]
   assets       PostAsset[]
   licenses     PostLicense[]
+  rights       PostRights?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
@@ -401,6 +402,20 @@ model SitemapState {
   lastGeneratedAt DateTime?
   pending         Boolean  @default(false)
   updatedAt       DateTime @updatedAt
+}
+
+/* ---------------- Rights/Copyright ---------------- */
+
+model PostRights {
+  id               String   @id @default(cuid())
+  postId           String   @unique
+  post             Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  copyrightHolder  String
+  copyrightYear    Int
+  licenseCode      String
+  customNotice     String?  @db.Text
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 /* ---------------- END ---------------- */
