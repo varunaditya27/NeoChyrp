@@ -13,7 +13,7 @@ import { useAuth } from "@/src/lib/auth/session";
 import { useSiteSettings } from '@/src/lib/settings/useSiteSettings';
 
 const Header: React.FC = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, logout } = useAuth();
   const pathname = usePathname();
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
@@ -32,7 +32,7 @@ const Header: React.FC = () => {
     return () => window.removeEventListener("click", handler);
   }, [open]);
 
-  const display = user?.email || user?.user_metadata?.full_name || user?.id || "";
+  const display = user?.displayName || user?.username || user?.email || "";
   const avatarLetter = display.charAt(0).toUpperCase();
 
   const navigation = [
@@ -135,7 +135,7 @@ const Header: React.FC = () => {
                   <div className="my-1 border-t border-gray-100"></div>
                   <button
                     type="button"
-                    onClick={() => { setOpen(false); signOut(); }}
+                    onClick={() => { setOpen(false); logout(); }}
                     className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
                     role="menuitem"
                   >
@@ -238,7 +238,7 @@ const Header: React.FC = () => {
                     Profile
                   </Link>
                   <button
-                    onClick={() => { setMobileMenuOpen(false); signOut(); }}
+                    onClick={() => { setMobileMenuOpen(false); logout(); }}
                     className="block w-full px-3 py-2 text-left text-base font-medium text-red-600 hover:bg-red-50"
                   >
                     Sign Out

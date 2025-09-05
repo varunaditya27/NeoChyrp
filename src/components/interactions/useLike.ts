@@ -166,6 +166,8 @@ export function useLike({ postId, initialCount = 0, initialLiked = false, syncDe
 			userId = await fetchCurrentUser();
 		}
 
+		console.log('Toggle like - User:', userId, 'Post:', postId, 'Current liked state:', liked);
+
 		const optimisticLiked = !liked;
 		const optimisticCount = count + (optimisticLiked ? 1 : -1);
 		setLiked(optimisticLiked);
@@ -173,6 +175,7 @@ export function useLike({ postId, initialCount = 0, initialLiked = false, syncDe
 
 		// Cache with user-specific key
 		const cacheKey = getCacheKey(userId);
+		console.log('Caching with key:', cacheKey, 'liked:', optimisticLiked, 'count:', optimisticCount);
 		likeCache.set(cacheKey, { liked: optimisticLiked, count: Math.max(0, optimisticCount), ts: Date.now() });
 		scheduleCleanup(); // Schedule cleanup when adding to cache
 
@@ -186,6 +189,7 @@ export function useLike({ postId, initialCount = 0, initialLiked = false, syncDe
 				body: JSON.stringify({ postId })
 			});
 			const json = await res.json();
+			console.log('Server response:', json);
 			if (!res.ok) throw new Error(json.error || 'Failed to toggle like');
 			// Server truth adjustment if optimistic drifted
 			setLiked(json.liked);
@@ -221,6 +225,13 @@ export function useLike({ postId, initialCount = 0, initialLiked = false, syncDe
 	// Refresh when user changes (handle account switching)
 	useEffect(() => {
 		if (currentUserId !== null) {
+			// Clear cached data for this post across all users when switching
+			// to ensure fresh fetch for the new user
+			const keysToRemove = Array.from(likeCache.keys()).filter(key => key.startsWith(`${postId}:`));
+			keysToRemove.forEach(key => likeCache.delete(key));
+			
+			console.log('User changed to:', currentUserId, 'for post:', postId, 'cleared keys:', keysToRemove);
+			
 			// User info is available, refresh to get user-specific like state
 			refresh();
 		}
