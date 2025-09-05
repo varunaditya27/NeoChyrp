@@ -1,0 +1,425 @@
+/**
+ * Feather Styles
+ * CSS for all feather content types
+ */
+
+/* Base feather content styling */
+.feather-content {
+  @apply text-gray-900 leading-relaxed;
+}
+
+.feather-content img {
+  @apply max-w-full h-auto rounded-lg;
+}
+
+.feather-content a {
+  @apply text-blue-600 hover:text-blue-800 transition-colors duration-200;
+}
+
+.feather-content a:hover {
+  @apply underline;
+}
+
+/* Error handling styles */
+.feather-error {
+  @apply bg-red-50 border border-red-200 rounded-lg p-4 text-red-700;
+}
+
+.feather-error strong {
+  @apply font-semibold;
+}
+
+/* TEXT Feather Styles */
+.feather-text {
+  @apply prose prose-lg max-w-none;
+}
+
+.feather-text h1, .feather-text h2, .feather-text h3,
+.feather-text h4, .feather-text h5, .feather-text h6 {
+  @apply text-gray-900 font-semibold;
+}
+
+.feather-text p {
+  @apply mb-4 text-gray-700 leading-relaxed;
+}
+
+.feather-text blockquote {
+  @apply border-l-4 border-blue-500 pl-6 italic text-gray-600 my-6;
+}
+
+.feather-text code {
+  @apply bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm font-mono;
+}
+
+.feather-text pre {
+  @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto;
+}
+
+.feather-text pre code {
+  @apply bg-transparent text-gray-100 p-0;
+}
+
+.feather-text ul, .feather-text ol {
+  @apply mb-4 pl-6;
+}
+
+.feather-text li {
+  @apply mb-2;
+}
+
+.feather-text table {
+  @apply w-full border-collapse border border-gray-300 mb-4;
+}
+
+.feather-text th, .feather-text td {
+  @apply border border-gray-300 px-3 py-2 text-left;
+}
+
+.feather-text th {
+  @apply bg-gray-100 font-semibold;
+}
+
+/* PHOTO Feather Styles */
+.feather-photo .photo-post {
+  @apply mb-6;
+}
+
+.feather-photo .photo-image {
+  @apply w-full h-auto rounded-lg shadow-md transition-transform duration-200 hover:scale-[1.02];
+}
+
+.feather-photo .lightbox-trigger {
+  @apply cursor-zoom-in;
+}
+
+.feather-photo .photo-caption {
+  @apply mt-3 text-gray-600 text-sm italic text-center;
+}
+
+.feather-photo .photo-info {
+  @apply mt-2 text-xs text-gray-500 text-center;
+}
+
+/* QUOTE Feather Styles */
+.feather-quote .quote-container {
+  @apply my-6;
+}
+
+.feather-quote .quote-container.quote-standard {
+  @apply border-l-4 border-yellow-400 bg-yellow-50 p-6 rounded-r-lg;
+}
+
+.feather-quote .quote-container.quote-pullquote {
+  @apply text-center p-8 bg-gray-50 rounded-lg border-t-4 border-yellow-400;
+}
+
+.feather-quote .quote-container.quote-minimal {
+  @apply border-l-2 border-gray-300 pl-4 py-2;
+}
+
+.feather-quote .quote-text {
+  @apply text-lg leading-relaxed;
+}
+
+.feather-quote .quote-pullquote .quote-text {
+  @apply text-xl font-medium text-gray-800;
+}
+
+.feather-quote .quote-minimal .quote-text {
+  @apply text-base;
+}
+
+.feather-quote .quote-attribution {
+  @apply mt-4 text-sm text-gray-600;
+}
+
+.feather-quote .quote-pullquote .quote-attribution {
+  @apply mt-6 text-base;
+}
+
+.feather-quote .quote-source {
+  @apply font-medium;
+}
+
+.feather-quote .quote-source-link {
+  @apply text-blue-600 hover:text-blue-800 hover:underline;
+}
+
+.feather-quote .quote-context {
+  @apply mt-4 text-sm text-gray-600 italic;
+}
+
+/* LINK Feather Styles */
+.feather-link .link-simple {
+  @apply text-lg;
+}
+
+.feather-link .link-preview {
+  @apply border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200 my-4;
+}
+
+.feather-link .link-thumbnail {
+  @apply relative overflow-hidden;
+}
+
+.feather-link .link-thumbnail img {
+  @apply w-full h-48 object-cover;
+}
+
+.feather-link .link-content {
+  @apply p-4;
+}
+
+.feather-link .link-title {
+  @apply text-lg font-semibold text-gray-900 mb-2;
+}
+
+.feather-link .link-title a {
+  @apply text-gray-900 hover:text-blue-600 no-underline;
+}
+
+.feather-link .link-description {
+  @apply text-gray-600 text-sm mb-3 leading-relaxed;
+}
+
+.feather-link .link-meta {
+  @apply flex items-center text-xs text-gray-500 space-x-2;
+}
+
+.feather-link .link-site {
+  @apply font-medium;
+}
+
+.feather-link .link-url {
+  @apply text-gray-400;
+}
+
+/* VIDEO Feather Styles */
+.feather-video .video-container {
+  @apply my-6;
+}
+
+.feather-video .video-header {
+  @apply mb-4;
+}
+
+.feather-video .video-title {
+  @apply text-xl font-semibold text-gray-900 mb-2;
+}
+
+.feather-video .video-player {
+  @apply w-full max-w-full rounded-lg shadow-md;
+}
+
+.feather-video .video-embed {
+  @apply relative w-full rounded-lg overflow-hidden shadow-md;
+}
+
+.feather-video .video-embed.youtube-embed,
+.feather-video .video-embed.vimeo-embed {
+  @apply aspect-video;
+}
+
+.feather-video .video-embed iframe {
+  @apply absolute inset-0 w-full h-full;
+}
+
+.feather-video .video-description {
+  @apply mt-4 text-gray-600 leading-relaxed;
+}
+
+/* AUDIO Feather Styles */
+.feather-audio .audio-container {
+  @apply my-6 bg-gray-50 rounded-lg p-6;
+}
+
+.feather-audio .audio-meta {
+  @apply flex items-start space-x-4 mb-4;
+}
+
+.feather-audio .audio-cover {
+  @apply flex-shrink-0;
+}
+
+.feather-audio .audio-cover img {
+  @apply w-20 h-20 rounded-lg object-cover shadow-sm;
+}
+
+.feather-audio .audio-info {
+  @apply flex-1 min-w-0;
+}
+
+.feather-audio .audio-title {
+  @apply text-lg font-semibold text-gray-900 mb-1;
+}
+
+.feather-audio .audio-artist {
+  @apply text-gray-600 mb-1;
+}
+
+.feather-audio .audio-album {
+  @apply text-gray-500 text-sm mb-1;
+}
+
+.feather-audio .audio-duration {
+  @apply text-gray-500 text-xs;
+}
+
+.feather-audio .audio-player {
+  @apply w-full;
+}
+
+.feather-audio .audio-description {
+  @apply mt-4 text-gray-600 text-sm leading-relaxed;
+}
+
+/* UPLOADER Feather Styles */
+.feather-uploader .uploader-container {
+  @apply my-6;
+}
+
+.feather-uploader .uploader-description {
+  @apply mb-4 text-gray-600 leading-relaxed;
+}
+
+/* Gallery Layout */
+.feather-uploader .uploader-gallery {
+  @apply grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6;
+}
+
+.feather-uploader .gallery-item {
+  @apply relative cursor-pointer rounded-lg overflow-hidden;
+}
+
+.feather-uploader .gallery-item img {
+  @apply w-full aspect-square object-cover hover:scale-105 transition-transform duration-200;
+}
+
+.feather-uploader .gallery-caption {
+  @apply absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2;
+}
+
+.feather-uploader .gallery-caption .file-name {
+  @apply text-white text-xs font-medium;
+}
+
+/* Grid Layout */
+.feather-uploader .uploader-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6;
+}
+
+.feather-uploader .grid-item {
+  @apply bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow duration-200;
+}
+
+.feather-uploader .grid-thumbnail {
+  @apply mb-3;
+}
+
+.feather-uploader .grid-thumbnail img {
+  @apply w-full h-32 object-cover rounded;
+}
+
+.feather-uploader .grid-icon {
+  @apply w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mb-3;
+}
+
+.feather-uploader .grid-info .file-link {
+  @apply font-medium text-gray-900 hover:text-blue-600;
+}
+
+.feather-uploader .grid-info .file-name {
+  @apply font-medium text-gray-900;
+}
+
+.feather-uploader .file-meta {
+  @apply text-xs text-gray-500 mt-1;
+}
+
+.feather-uploader .file-description {
+  @apply text-sm text-gray-600 mt-2;
+}
+
+/* List Layout */
+.feather-uploader .uploader-list {
+  @apply space-y-3;
+}
+
+.feather-uploader .file-item {
+  @apply flex items-center space-x-3 p-3 bg-white border border-gray-200 rounded-lg hover:shadow-sm transition-shadow duration-200;
+}
+
+.feather-uploader .file-thumbnail {
+  @apply flex-shrink-0;
+}
+
+.feather-uploader .file-thumbnail img {
+  @apply w-12 h-12 object-cover rounded;
+}
+
+.feather-uploader .file-icon {
+  @apply w-12 h-12 bg-gray-100 rounded flex items-center justify-center flex-shrink-0;
+}
+
+.feather-uploader .file-details {
+  @apply flex-1 min-w-0;
+}
+
+.feather-uploader .file-details .file-link {
+  @apply font-medium text-gray-900 hover:text-blue-600 truncate block;
+}
+
+.feather-uploader .file-details .file-name {
+  @apply font-medium text-gray-900 truncate block;
+}
+
+.feather-uploader .uploader-files h4 {
+  @apply text-lg font-semibold text-gray-900 mb-3;
+}
+
+/* File Type Icons */
+.feather-uploader .file-icon-pdf::before {
+  content: "📄";
+  @apply text-lg;
+}
+
+.feather-uploader .file-icon-doc::before,
+.feather-uploader .file-icon-docx::before {
+  content: "📝";
+  @apply text-lg;
+}
+
+.feather-uploader .file-icon-xls::before,
+.feather-uploader .file-icon-xlsx::before {
+  content: "📊";
+  @apply text-lg;
+}
+
+.feather-uploader .file-icon-zip::before,
+.feather-uploader .file-icon-rar::before {
+  content: "🗜️";
+  @apply text-lg;
+}
+
+.feather-uploader .file-icon-txt::before {
+  content: "📄";
+  @apply text-lg;
+}
+
+.feather-uploader .file-icon-default::before {
+  content: "📎";
+  @apply text-lg;
+}
+
+/* Error state */
+.feather-content .error-content {
+  @apply border-l-4 border-red-400 bg-red-50 p-4 rounded-r;
+}
+
+.feather-content .error-content p {
+  @apply text-red-800 font-medium mb-2;
+}
+
+.feather-content .error-content pre {
+  @apply bg-red-100 text-red-900 p-3 rounded text-sm overflow-x-auto;
+}
