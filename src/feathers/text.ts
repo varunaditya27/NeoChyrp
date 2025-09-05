@@ -84,7 +84,7 @@ function generateTextExcerpt(payload: TextFeatherPayload): string {
 // Register the feather
 registerFeather(
   {
-    slug: 'TEXT',
+    slug: 'text',
     name: 'Text',
     version: '1.0.0',
     description: 'Standard textual blog posts with Markdown support',
