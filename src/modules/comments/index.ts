@@ -12,7 +12,7 @@ import { z } from 'zod';
 
 import { applyFilters } from '@/src/lib/triggers';
 
-import { prisma } from '../../lib/db';
+import { prisma } from '@/src/lib/db';
 import { eventBus, CoreEvents } from '../../lib/events';
 import { registerModule } from '../../lib/modules/registry';
 
