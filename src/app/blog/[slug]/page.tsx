@@ -5,11 +5,12 @@
 import { notFound } from 'next/navigation';
 
 import { ViewTracker } from '@/src/components/analytics/ViewTracker';
+import { FeatherRenderer } from '@/src/components/feathers/FeatherRenderer';
 import { CommentsThread } from '@/src/components/interactions/CommentsThread';
 import { LikeButton } from '@/src/components/interactions/LikeButton';
 import { MathJaxLoader } from '@/src/components/math/MathJaxLoader';
 import { getRelatedPosts } from '@/src/lib/content/related';
-import { renderMarkdown, injectEmoji } from '@/src/lib/markdown';
+import { renderPost } from '@/src/lib/feathers/post-renderer';
 import { getPostBySlug } from '@/src/modules/content/application/queries/getPostBySlug';
 
 interface Params { slug: string }
@@ -18,9 +19,18 @@ export default async function PostPage({ params }: { params: Promise<Params> }) 
   const resolvedParams = await params;
   const post = await getPostBySlug(resolvedParams.slug);
   if (!post) return notFound();
+
   const related = await getRelatedPosts(post.id, 5);
-  const raw = post.body || '';
-  const html = injectEmoji(renderMarkdown(raw));
+
+  // Render post content using the feather system
+  const html = await renderPost({
+    id: post.id,
+    feather: post.feather,
+    featherData: post.featherData,
+    body: post.body,
+    renderedBody: post.renderedBody,
+  });
+
   return (
     <article className="prose max-w-none">
       <h1>{post.title || '(untitled)'}</h1>
@@ -29,7 +39,16 @@ export default async function PostPage({ params }: { params: Promise<Params> }) 
         {/* Optimistically pass 0; LikeButton will fetch real data */}
         <LikeButton postId={post.id} />
       </div>
-      <div className="mt-6" dangerouslySetInnerHTML={{ __html: html }} />
+
+      {/* Render feather content */}
+      <div className="mt-6">
+        <FeatherRenderer
+          html={html}
+          featherType={post.feather}
+          className="post-content"
+        />
+      </div>
+
       <ViewTracker postId={post.id} />
       <MathJaxLoader />
       {related.length > 0 && (

@@ -3,6 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import feather styles */
+@import './feathers.css';
+
 /* CSS layer extension examples (design tokens could live here). */
 :root {
   --radius-sm: 2px;
