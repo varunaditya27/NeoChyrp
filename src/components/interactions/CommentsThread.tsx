@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import dynamic from 'next/dynamic';
 import React, { useEffect, useState, useCallback } from 'react';
 
-const Maptcha = dynamic(() => import('@/src/components/captcha/Maptcha').then(m => m.Maptcha), { ssr: false });
+const Maptcha = dynamic(() => import('@/src/components/maptcha/Maptcha').then(m => ({ default: m.Maptcha })), { ssr: false });
 
 type Comment = {
   id: number;
@@ -141,7 +141,7 @@ export const CommentsThread: React.FC<CommentsThreadProps> = ({ postId }) => {
             className="w-full resize-none rounded-lg border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500"
           />
         </div>
-        <Maptcha onChange={setCaptcha} />
+        <Maptcha onChange={(token, answer) => setCaptcha({ token, answer })} />
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button

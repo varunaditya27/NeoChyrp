@@ -34,6 +34,7 @@ async function DashboardStats() {
       tagsCount,
       categoriesCount,
       usersCount,
+      webmentionsCount,
     ] = await Promise.all([
       prisma.post.count({ where: { visibility: 'PUBLISHED' } }),
       prisma.post.count({ where: { visibility: 'DRAFT' } }),
@@ -42,6 +43,7 @@ async function DashboardStats() {
       prisma.tag.count(),
       prisma.category.count(),
       prisma.user.count(),
+      prisma.webMention.count(),
     ]);
 
     const stats = [
@@ -86,6 +88,14 @@ async function DashboardStats() {
         description: 'User management',
       },
       {
+        name: 'WebMentions',
+        value: webmentionsCount,
+        icon: 'link',
+        color: 'orange',
+        href: '/dashboard/webmentions',
+        description: 'Incoming webmentions',
+      },
+      {
         name: 'Settings',
         value: '⚙️',
         icon: 'cog',
@@ -128,6 +138,11 @@ async function DashboardStats() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         ),
+        link: (
+          <svg className="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        ),
       };
       return icons[iconName as keyof typeof icons] || icons.cog;
     };
@@ -140,6 +155,7 @@ async function DashboardStats() {
         yellow: 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100',
         indigo: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100',
         gray: 'bg-gray-50 text-gray-600 hover:bg-gray-100',
+        orange: 'bg-orange-50 text-orange-600 hover:bg-orange-100',
       };
       return colors[color as keyof typeof colors] || colors.gray;
     };

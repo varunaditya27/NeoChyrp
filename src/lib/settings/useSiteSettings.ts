@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from 'react';
 
-interface SiteSettings { title: string; tagline: string; theme?: string }
+interface SiteSettings { title: string; tagline: string; theme?: string; description?: string; url?: string }
 
 export function useSiteSettings() {
   const [data, setData] = useState<SiteSettings>({ title: 'NeoChyrp', tagline: '' });
@@ -10,7 +10,15 @@ export function useSiteSettings() {
 
   const load = useCallback(() => {
     setLoading(true);
-    fetch('/api/settings/public', { cache: 'no-store' })
+    // Add cache busting parameter to ensure fresh data
+    const timestamp = Date.now();
+    fetch(`/api/settings/public?t=${timestamp}`, {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    })
       .then(r => r.json())
       .then(res => {
         if (res.success) {
@@ -28,7 +36,10 @@ export function useSiteSettings() {
 
   // Listen for custom event dispatched after server action completes
   useEffect(() => {
-    const handler = () => load();
+    const handler = () => {
+      // Add small delay to ensure all caches are cleared
+      setTimeout(() => load(), 100);
+    };
     window.addEventListener('settings:updated', handler);
     return () => window.removeEventListener('settings:updated', handler);
   }, [load]);
