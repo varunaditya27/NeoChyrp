@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import Script from 'next/script';
 import { useParams, useRouter } from 'next/navigation';
 import AdminLayout from '@/src/components/admin/AdminLayout';
 import { useAuth } from '@/src/lib/auth/session';
@@ -21,13 +22,16 @@ export default function EditPostPage(){
   if (loading) return null; if(!user||!canCreateContent(user)) return null;
   const update = async () => { if(!data) return; setSaving(true); await fetch(`/api/posts/${id}`,{ method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:data.title, body:data.body, excerpt:data.excerpt, featherData: data.featherData }) }); setSaving(false); router.push('/admin/manage'); };
   return <AdminLayout title={data?`Edit: ${data.title}`:'Edit Post'}>
+    <Script id="max-upload-bytes-edit" strategy="afterInteractive">
+      {`window.__MAX_UPLOAD_BYTES__ = ${parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES || process.env.MAX_UPLOAD_BYTES || '0',10) || 0};`}
+    </Script>
     {!data && <div className="text-sm text-gray-500">Loading...</div>}
     {data && <div className="space-y-4 max-w-3xl">
       <input value={data.title||''} onChange={e=>setData({...data,title:e.target.value})} className="w-full px-3 py-2 border rounded" />
       <textarea rows={14} value={data.body||''} onChange={e=>setData({...data,body:e.target.value})} className="w-full px-3 py-2 border rounded" />
       {feathers.filter(f=> f.slug===data.feather).map(f=> <div key={f.slug} className="bg-white border rounded p-4">
         <h3 className="font-medium mb-2">{f.name} Options</h3>
-        <FeatherDynamicFields fields={f.fields} value={data.featherData} onChange={(val)=> setData({...data, featherData: val})} />
+  <FeatherDynamicFields fields={f.fields} value={data.featherData} onChange={(val)=> setData({...data, featherData: val})} maxBytes={parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES || process.env.MAX_UPLOAD_BYTES || '0',10) || undefined} />
       </div>)}
       <textarea rows={3} value={data.excerpt||''} onChange={e=>setData({...data,excerpt:e.target.value})} className="w-full px-3 py-2 border rounded" />
       <div className="flex gap-3">

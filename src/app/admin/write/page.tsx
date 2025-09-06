@@ -7,6 +7,7 @@
 
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
+import Script from 'next/script';
 
 import { FeatherDynamicFields } from '@/src/components/admin/FeatherDynamicFields';
 import { excerptFromMarkdown } from '@/src/lib/markdown';
@@ -238,6 +239,10 @@ const WritePage: React.FC = () => {
 
   return (
     <AdminLayout title="Write New Post">
+      {/* Expose max upload size to client for pre-flight validation */}
+      <Script id="max-upload-bytes" strategy="afterInteractive">
+        {`window.__MAX_UPLOAD_BYTES__ = ${parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES || process.env.MAX_UPLOAD_BYTES || '0',10) || 0};`}
+      </Script>
       <div className="max-w-4xl">
         <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
           {/* Header */}
@@ -303,7 +308,7 @@ const WritePage: React.FC = () => {
               {/* Feather Specific Fields */}
               {feathers.filter(f=> (f as any).slug === formData.featherName).map(f=> <div key={(f as any).slug} className="rounded-lg border border-gray-200 bg-white p-4">
                 <h3 className="mb-3 text-lg font-medium text-gray-900">{(f as any).name} Options</h3>
-                <FeatherDynamicFields deferUploads fields={(f as any).fields||[]} value={featherData} onChange={setFeatherData} />
+                <FeatherDynamicFields deferUploads fields={(f as any).fields||[]} value={featherData} onChange={setFeatherData} maxBytes={parseInt(process.env.NEXT_PUBLIC_MAX_UPLOAD_BYTES || process.env.MAX_UPLOAD_BYTES || '0',10) || undefined} />
               </div>)}
 
               {/* Excerpt */}

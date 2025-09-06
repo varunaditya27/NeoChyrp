@@ -14,7 +14,8 @@ export async function GET(req: Request) {
     return {
       ...a,
       thumbnailUrl: ax.thumbnailPath ? publicAssetUrl(ax.thumbnailPath) : null,
-      secureUrl: `/api/assets/${a.id}?token=${encodeURIComponent(ax.accessToken || '')}`
+      // assets are publicly accessible via /api/assets/:id which redirects to public URL
+      secureUrl: `/api/assets/${a.id}`
     };
   }) });
 }
