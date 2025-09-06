@@ -11,9 +11,9 @@ It is built with a powerful tech stack including Next.js 15 (App Router), TypeSc
 NeoChyrp comes packed with features that make it a powerful and flexible platform for any kind of blog or publication.
 
 - **Content Management:**
-    - **Feathers:** Create diverse content with different "Feathers" (post types) like Text, Photo, Video, Audio, Quotes, and Links.
+    - **Feathers:** Create diverse content with different "Feathers" (post types) like Text, Photo, Video, Audio, Quotes, Links, and Uploader (multi-file/gallery).
     - **WYSIWYG Editor:** A modern Markdown editor for writing content.
-    - **Tagging & Categorization:** Organize your posts with tags and nested categories.
+    - **Tagging & Categorization:** Organize your posts with tags and nested categories. Public tags page supports fuzzy search and highlighting.
 - **Community & Interaction:**
     - **Comments:** A full-featured, threaded commenting system.
     - **Likes:** Allow users to like and engage with posts.
@@ -21,10 +21,13 @@ NeoChyrp comes packed with features that make it a powerful and flexible platfor
 - **Extensibility:**
     - **Modular Architecture:** A robust, event-driven module system allows for easy extension and customization.
     - **Permissions:** Fine-grained, role-based access control (RBAC) for users, groups, and permissions.
+    - **Sample Content:** Example payloads for every feather type are provided in `docs/FEATHER_SAMPLE_CONTENT.md` for easy onboarding and testing.
 - **Technical Features:**
     - **API-First Design:** A comprehensive API for all major functionalities.
     - **Database Migrations:** Database schema management with Prisma Migrate.
     - **Authentication:** Secure authentication powered by Supabase.
+    - **Asset Delivery:** All uploaded assets (images, audio, video, files) are delivered via `/api/assets/:id` for consistent, public access across all feathers.
+    - **Upload Validation:** Asset uploads are strictly validated by type and size per feather, with clear error messages and .env-configurable limits.
 
 ## Tech Stack
 
@@ -52,6 +55,7 @@ neo-chyrp/
 ├── src/
 │   ├── app/           # Next.js App Router routes (RSC)
 │   ├── components/    # Shared UI components
+│   ├── feathers/      # Feather (post type) definitions and renderers
 │   ├── lib/           # Core infrastructure (DB, auth, events, etc.)
 │   ├── modules/       # Feature modules (comments, likes, etc.)
 │   └── styles/        # Global styles
@@ -105,6 +109,10 @@ Follow these instructions to get NeoChyrp up and running on your local machine f
     ```
     The application should now be running at [http://localhost:3000](http://localhost:3000).
 
+#### Asset Delivery Note
+
+All uploaded assets (images, audio, video, files) are served via `/api/assets/:id` for public access. If you encounter 403 errors, ensure your Supabase storage bucket is public and you are using asset IDs (not raw URLs) in your content. See the [docs/FEATHER_SAMPLE_CONTENT.md](docs/FEATHER_SAMPLE_CONTENT.md) for examples.
+
 ### One-Command Bootstrap
 
 For convenience, you can use the helper scripts in the `scripts/` directory to perform all the setup steps at once.
@@ -124,7 +132,7 @@ For convenience, you can use the helper scripts in the `scripts/` directory to p
 
 ## Configuration
 
-All configuration is done via environment variables. See the `.env.example` file for a full list of available options.
+All configuration is done via environment variables. See the `.env.example` file for a full list of available options. The maximum upload size for assets is controlled by `NEXT_PUBLIC_MAX_UPLOAD_BYTES` (in bytes).
 
 | Variable                      | Description                                                                                             |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------- |
