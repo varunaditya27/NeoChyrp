@@ -7,8 +7,6 @@ import { registerFeather, type FeatherRenderer, type FeatherExcerptGenerator } f
 // Schema for text feather payload
 export const TextFeatherSchema = z.object({
   markdown: z.string().min(1, 'Content is required'),
-  enableComments: z.boolean().default(true),
-  allowRichFormatting: z.boolean().default(true),
 });
 
 export type TextFeatherPayload = z.infer<typeof TextFeatherSchema>;
@@ -21,18 +19,6 @@ const textFields = [
     label: 'Content',
     required: true,
     placeholder: 'Write your post content in Markdown...',
-  },
-  {
-    name: 'enableComments',
-    type: 'boolean' as const,
-    label: 'Enable Comments',
-    required: false,
-  },
-  {
-    name: 'allowRichFormatting',
-    type: 'boolean' as const,
-    label: 'Allow Rich Formatting',
-    required: false,
   },
 ];
 

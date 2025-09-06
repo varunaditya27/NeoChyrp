@@ -13,9 +13,6 @@ export const LinkFeatherSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   thumbnail: z.string().url().optional().or(z.literal('')),
-  siteName: z.string().optional(),
-  showPreview: z.boolean().default(true),
-  openInNewTab: z.boolean().default(true),
 });
 
 export type LinkFeatherPayload = z.infer<typeof LinkFeatherSchema>;
@@ -50,25 +47,7 @@ const linkFields = [
     required: false,
     placeholder: 'Image URL for preview',
   },
-  {
-    name: 'siteName',
-    type: 'text' as const,
-    label: 'Site Name',
-    required: false,
-    placeholder: 'Name of the linked site',
-  },
-  {
-    name: 'showPreview',
-    type: 'checkbox' as const,
-    label: 'Show Preview Card',
-    required: false,
-  },
-  {
-    name: 'openInNewTab',
-    type: 'checkbox' as const,
-    label: 'Open in New Tab',
-    required: false,
-  },
+  // Keep minimal preview-related fields; open-in-new-tab is defaulted in render
 ];
 
 // Render function
@@ -81,10 +60,10 @@ async function renderLink(payload: LinkFeatherPayload): Promise<string> {
         .replace(/'/g, '&#039;');
 
   const url = escapeHtml(payload.url);
-  const target = payload.openInNewTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+  const target = ' target="_blank" rel="noopener noreferrer"';
   const title = payload.title || payload.url;
 
-  if (!payload.showPreview || (!payload.title && !payload.description && !payload.thumbnail)) {
+  if (!payload.title && !payload.description && !payload.thumbnail) {
     // Simple link without preview
     return `<p class="link-simple"><a href="${url}"${target}>${escapeHtml(title)}</a></p>`;
   }
@@ -109,9 +88,6 @@ async function renderLink(payload: LinkFeatherPayload): Promise<string> {
   }
 
   html += `<div class="link-meta">`;
-  if (payload.siteName) {
-    html += `<span class="link-site">${escapeHtml(payload.siteName)}</span>`;
-  }
   html += `<span class="link-url">${escapeHtml(new URL(payload.url).hostname)}</span>`;
   html += `</div>`;
 

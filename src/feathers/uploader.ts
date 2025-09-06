@@ -38,6 +38,7 @@ const uploaderFields = [
     label: 'Files',
     required: true,
     multiple: true,
+  placeholder: 'Drag & drop or select one or more files to attach'
   },
   {
     name: 'description',

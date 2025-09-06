@@ -10,16 +10,11 @@ import { registerFeather, type FeatherRenderer, type FeatherExcerptGenerator } f
 // Schema for audio feather payload
 export const AudioFeatherSchema = z.object({
   audioUrl: z.string().url('Must be a valid audio URL'),
-  audioType: z.enum(['mp3', 'wav', 'ogg', 'aac', 'flac', 'other']).default('mp3'),
+  audioType: z.enum(['mp3', 'wav', 'ogg', 'aac', 'flac']).optional(),
   title: z.string().optional(),
   artist: z.string().optional(),
-  album: z.string().optional(),
-  duration: z.number().optional(),
   description: z.string().optional(),
   coverArt: z.string().url().optional().or(z.literal('')),
-  autoplay: z.boolean().default(false),
-  loop: z.boolean().default(false),
-  preload: z.enum(['none', 'metadata', 'auto']).default('metadata'),
 });
 
 export type AudioFeatherPayload = z.infer<typeof AudioFeatherSchema>;
@@ -28,10 +23,11 @@ export type AudioFeatherPayload = z.infer<typeof AudioFeatherSchema>;
 const audioFields = [
   {
     name: 'audioUrl',
-    type: 'url' as const,
-    label: 'Audio URL',
+    type: 'media' as const,
+    label: 'Audio',
     required: true,
-    placeholder: 'https://example.com/audio.mp3',
+    placeholder: 'Upload an audio file or paste an MP3/WAV/OGG URL',
+    accept: 'audio/*',
   },
   {
     name: 'audioType',
@@ -63,17 +59,10 @@ const audioFields = [
   },
   {
     name: 'album',
-    type: 'text' as const,
-    label: 'Album',
-    required: false,
-    placeholder: 'Album or collection name',
-  },
-  {
-    name: 'duration',
-    type: 'number' as const,
-    label: 'Duration (seconds)',
-    required: false,
-    placeholder: 'Length of the audio in seconds',
+  type: 'text' as const,
+  label: 'Album',
+  required: false,
+  placeholder: 'Album or collection name',
   },
   {
     name: 'description',
@@ -89,32 +78,22 @@ const audioFields = [
     required: false,
     placeholder: 'Album art or thumbnail image',
   },
-  {
-    name: 'autoplay',
-    type: 'checkbox' as const,
-    label: 'Autoplay',
-    required: false,
-  },
-  {
-    name: 'loop',
-    type: 'checkbox' as const,
-    label: 'Loop',
-    required: false,
-  },
-  {
-    name: 'preload',
-    type: 'select' as const,
-    label: 'Preload',
-    required: false,
-    options: [
-      { value: 'none', label: 'None' },
-      { value: 'metadata', label: 'Metadata' },
-      { value: 'auto', label: 'Auto' },
-    ],
-  },
 ];
 
 // Render function
+function detectAudioType(url: string): 'mp3' | 'wav' | 'ogg' | 'aac' | 'flac' | 'other' | null {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.toLowerCase();
+    if (path.endsWith('.mp3')) return 'mp3';
+    if (path.endsWith('.wav')) return 'wav';
+    if (path.endsWith('.ogg') || path.endsWith('.oga')) return 'ogg';
+    if (path.endsWith('.aac')) return 'aac';
+    if (path.endsWith('.flac')) return 'flac';
+    return 'other';
+  } catch { return null; }
+}
+
 async function renderAudio(payload: AudioFeatherPayload): Promise<string> {
   const escapeHtml = (text: string) =>
     text.replace(/&/g, '&amp;')
@@ -126,7 +105,7 @@ async function renderAudio(payload: AudioFeatherPayload): Promise<string> {
   let html = '<div class="audio-container">';
 
   // Audio metadata header
-  if (payload.title || payload.artist || payload.album || payload.coverArt) {
+  if (payload.title || payload.artist || payload.coverArt) {
     html += '<div class="audio-meta">';
 
     if (payload.coverArt) {
@@ -145,29 +124,17 @@ async function renderAudio(payload: AudioFeatherPayload): Promise<string> {
       html += `<p class="audio-artist">by ${escapeHtml(payload.artist)}</p>`;
     }
 
-    if (payload.album) {
-      html += `<p class="audio-album">from ${escapeHtml(payload.album)}</p>`;
-    }
-
-    if (payload.duration) {
-      const minutes = Math.floor(payload.duration / 60);
-      const seconds = payload.duration % 60;
-      const durationStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-      html += `<p class="audio-duration">${durationStr}</p>`;
-    }
+  // Album/duration removed from minimal schema
 
     html += '</div></div>';
   }
 
   // Audio player
+  const resolvedType = payload.audioType || detectAudioType(payload.audioUrl) || 'mp3';
   html += `<audio class="audio-player" controls`;
 
-  if (payload.autoplay) html += ` autoplay`;
-  if (payload.loop) html += ` loop`;
-  html += ` preload="${payload.preload}"`;
-
   html += `>`;
-  html += `<source src="${escapeHtml(payload.audioUrl)}" type="audio/${payload.audioType}">`;
+  html += `<source src="${escapeHtml(payload.audioUrl)}" type="audio/${resolvedType}">`;
   html += `<p>Your browser doesn't support HTML5 audio. <a href="${escapeHtml(payload.audioUrl)}">Download the audio file</a> instead.</p>`;
   html += `</audio>`;
 
@@ -192,19 +159,11 @@ function generateAudioExcerpt(payload: AudioFeatherPayload): string {
     parts.push(`by ${payload.artist}`);
   }
 
-  if (payload.album) {
-    parts.push(`from ${payload.album}`);
-  }
-
-  if (payload.duration) {
-    const minutes = Math.floor(payload.duration / 60);
-    const seconds = payload.duration % 60;
-    const durationStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    parts.push(`(${durationStr})`);
-  }
+  // Album/duration removed from minimal schema
 
   if (parts.length === 0) {
-    return `Audio (${payload.audioType.toUpperCase()})`;
+    const t = (payload.audioType || detectAudioType(payload.audioUrl) || 'mp3').toUpperCase();
+    return `Audio (${t})`;
   }
 
   let excerpt = parts.join(' ');

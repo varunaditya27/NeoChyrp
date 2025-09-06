@@ -25,6 +25,7 @@ const photoFields = [
     type: 'media' as const,
     label: 'Image',
     required: true,
+  placeholder: 'Upload or drop an image file (stores asset ID)'
   },
   {
     name: 'caption',

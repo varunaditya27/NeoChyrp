@@ -25,9 +25,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Admin Dash
 
   useEffect(() => {
     if (!loading && !user) {
-      // Modal-based auth: instead of redirecting to legacy /login route (removed),
-      // send user to home where Navbar can trigger AuthModal.
-      router.push('/');
+      router.push('/login');
       return;
     }
 
@@ -146,20 +144,14 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Admin Dash
         {/* User Info & Logout */}
         <div className="border-t p-4">
           <div className="flex items-center space-x-3 mb-3">
-            <div className={`flex size-8 items-center justify-center rounded-full text-sm font-semibold text-white ${
-              isAdmin(user) ? 'bg-red-600' : 'bg-blue-600'
-            }`}>
+            <div className="flex size-8 items-center justify-center rounded-full bg-blue-600 text-sm font-semibold text-white">
               {(user.displayName || user.username)?.charAt(0).toUpperCase() || "U"}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
                 {user.displayName || user.username}
               </p>
-              <p className={`text-xs font-medium ${
-                isAdmin(user) ? 'text-red-600' : 'text-blue-600'
-              }`}>
-                {getUserAccessLevel(user)}
-              </p>
+              <p className="text-xs text-gray-500">{user.role}</p>
             </div>
           </div>
           <div className="space-y-1">
@@ -181,16 +173,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Admin Dash
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className="bg-white shadow-sm border-b">
-          <div className="flex items-center justify-between px-6 py-4">
-            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-            <div className="text-sm text-gray-500">
-              Welcome back, {user.displayName || user.username}
-            </div>
-          </div>
-        </header>
-
         {/* Page Content */}
         <main className="flex-1 overflow-auto bg-gray-50 p-6">
           {children}
