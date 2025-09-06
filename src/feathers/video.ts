@@ -10,17 +10,10 @@ import { registerFeather, type FeatherRenderer, type FeatherExcerptGenerator } f
 // Schema for video feather payload
 export const VideoFeatherSchema = z.object({
   videoUrl: z.string().url('Must be a valid video URL'),
-  videoType: z.enum(['mp4', 'webm', 'ogg', 'youtube', 'vimeo', 'other']).default('mp4'),
+  videoType: z.enum(['mp4', 'webm', 'ogg', 'youtube', 'vimeo']).optional(),
   posterUrl: z.string().url().optional().or(z.literal('')),
   title: z.string().optional(),
   description: z.string().optional(),
-  duration: z.number().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  autoplay: z.boolean().default(false),
-  muted: z.boolean().default(false),
-  loop: z.boolean().default(false),
-  controls: z.boolean().default(true),
 });
 
 export type VideoFeatherPayload = z.infer<typeof VideoFeatherSchema>;
@@ -29,10 +22,11 @@ export type VideoFeatherPayload = z.infer<typeof VideoFeatherSchema>;
 const videoFields = [
   {
     name: 'videoUrl',
-    type: 'url' as const,
-    label: 'Video URL',
+    type: 'media' as const,
+    label: 'Video',
     required: true,
-    placeholder: 'https://example.com/video.mp4 or YouTube/Vimeo URL',
+    placeholder: 'Upload a video file or paste a YouTube/Vimeo/MP4 URL',
+    accept: 'video/*',
   },
   {
     name: 'videoType',
@@ -45,7 +39,6 @@ const videoFields = [
       { value: 'ogg', label: 'OGG' },
       { value: 'youtube', label: 'YouTube' },
       { value: 'vimeo', label: 'Vimeo' },
-      { value: 'other', label: 'Other' },
     ],
   },
   {
@@ -69,54 +62,25 @@ const videoFields = [
     required: false,
     placeholder: 'Brief description of the video content',
   },
-  {
-    name: 'duration',
-    type: 'number' as const,
-    label: 'Duration (seconds)',
-    required: false,
-    placeholder: 'Length of the video in seconds',
-  },
-  {
-    name: 'width',
-    type: 'number' as const,
-    label: 'Width',
-    required: false,
-    placeholder: 'Video width in pixels',
-  },
-  {
-    name: 'height',
-    type: 'number' as const,
-    label: 'Height',
-    required: false,
-    placeholder: 'Video height in pixels',
-  },
-  {
-    name: 'autoplay',
-    type: 'checkbox' as const,
-    label: 'Autoplay',
-    required: false,
-  },
-  {
-    name: 'muted',
-    type: 'checkbox' as const,
-    label: 'Muted',
-    required: false,
-  },
-  {
-    name: 'loop',
-    type: 'checkbox' as const,
-    label: 'Loop',
-    required: false,
-  },
-  {
-    name: 'controls',
-    type: 'checkbox' as const,
-    label: 'Show Controls',
-    required: false,
-  },
 ];
 
 // Helper function to extract video ID from YouTube/Vimeo URLs
+function detectVideoType(url: string): 'youtube' | 'vimeo' | 'mp4' | 'webm' | 'ogg' | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.toLowerCase();
+    if (host.includes('youtube.com') || host.includes('youtu.be')) return 'youtube';
+    if (host.includes('vimeo.com')) return 'vimeo';
+    const path = u.pathname.toLowerCase();
+    if (path.endsWith('.mp4')) return 'mp4';
+    if (path.endsWith('.webm')) return 'webm';
+    if (path.endsWith('.ogg') || path.endsWith('.ogv')) return 'ogg';
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 function extractVideoId(url: string, type: string): string | null {
   try {
     const urlObj = new URL(url);
@@ -157,57 +121,38 @@ async function renderVideo(payload: VideoFeatherPayload): Promise<string> {
     html += `<h3 class="video-title">${escapeHtml(payload.title)}</h3>`;
   }
 
+  const resolvedType = payload.videoType || detectVideoType(payload.videoUrl) || 'mp4';
+
   // Handle different video types
-  if (payload.videoType === 'youtube') {
+  if (resolvedType === 'youtube') {
     const videoId = extractVideoId(payload.videoUrl, 'youtube');
     if (videoId) {
-      const params = new URLSearchParams();
-      if (payload.autoplay) params.append('autoplay', '1');
-      if (payload.muted) params.append('mute', '1');
-      if (payload.loop) params.append('loop', '1');
-      if (!payload.controls) params.append('controls', '0');
+  const params = new URLSearchParams();
 
       const embedUrl = `https://www.youtube.com/embed/${videoId}${params.toString() ? '?' + params.toString() : ''}`;
 
       html += `<div class="video-embed youtube-embed">`;
       html += `<iframe src="${embedUrl}" frameborder="0" allowfullscreen`;
-      if (payload.width && payload.height) {
-        html += ` width="${payload.width}" height="${payload.height}"`;
-      }
       html += `></iframe></div>`;
     }
-  } else if (payload.videoType === 'vimeo') {
+  } else if (resolvedType === 'vimeo') {
     const videoId = extractVideoId(payload.videoUrl, 'vimeo');
     if (videoId) {
-      const params = new URLSearchParams();
-      if (payload.autoplay) params.append('autoplay', '1');
-      if (payload.muted) params.append('muted', '1');
-      if (payload.loop) params.append('loop', '1');
+  const params = new URLSearchParams();
 
       const embedUrl = `https://player.vimeo.com/video/${videoId}${params.toString() ? '?' + params.toString() : ''}`;
 
       html += `<div class="video-embed vimeo-embed">`;
       html += `<iframe src="${embedUrl}" frameborder="0" allowfullscreen`;
-      if (payload.width && payload.height) {
-        html += ` width="${payload.width}" height="${payload.height}"`;
-      }
       html += `></iframe></div>`;
     }
   } else {
     // Native HTML5 video
-    html += `<video class="video-player"`;
-
-    if (payload.controls) html += ` controls`;
-    if (payload.autoplay) html += ` autoplay`;
-    if (payload.muted) html += ` muted`;
-    if (payload.loop) html += ` loop`;
+    html += `<video class="video-player" controls`;
     if (payload.posterUrl) html += ` poster="${escapeHtml(payload.posterUrl)}"`;
-    if (payload.width && payload.height) {
-      html += ` width="${payload.width}" height="${payload.height}"`;
-    }
 
     html += `>`;
-    html += `<source src="${escapeHtml(payload.videoUrl)}" type="video/${payload.videoType}">`;
+    html += `<source src="${escapeHtml(payload.videoUrl)}" type="video/${resolvedType}">`;
     html += `<p>Your browser doesn't support HTML5 video. <a href="${escapeHtml(payload.videoUrl)}">Download the video</a> instead.</p>`;
     html += `</video>`;
   }
@@ -224,20 +169,13 @@ async function renderVideo(payload: VideoFeatherPayload): Promise<string> {
 // Generate excerpt from video
 function generateVideoExcerpt(payload: VideoFeatherPayload): string {
   const title = payload.title || 'Video';
-  const type = payload.videoType.toUpperCase();
+  const type = (payload.videoType || detectVideoType(payload.videoUrl) || 'mp4').toUpperCase();
 
   if (payload.description) {
     const description = payload.description.length > 100
       ? payload.description.slice(0, 97).trim() + '...'
       : payload.description;
     return `${title} (${type}) — ${description}`;
-  }
-
-  if (payload.duration) {
-    const minutes = Math.floor(payload.duration / 60);
-    const seconds = payload.duration % 60;
-    const durationStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-    return `${title} (${type}, ${durationStr})`;
   }
 
   return `${title} (${type})`;

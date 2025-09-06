@@ -6,8 +6,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+
 import { FeatherDynamicFields } from '@/src/components/admin/FeatherDynamicFields';
+import { excerptFromMarkdown } from '@/src/lib/markdown';
 import AdminLayout from "../../../components/admin/AdminLayout";
 import { canCreateContent } from "../../../lib/auth/adminAccess";
 import { useAuth } from "../../../lib/auth/session";
@@ -44,6 +46,39 @@ const WritePage: React.FC = () => {
   });
   const [feathers,setFeathers] = useState<FeatherInfo[]>([]);
   const [featherData,setFeatherData] = useState<any>({});
+  const liveExcerpt = useMemo(() => {
+    // Derive an excerpt source from feather data by type
+    const t = formData.featherName;
+    const fd = featherData || {};
+    let source = '';
+    switch (t) {
+      case 'text':
+        source = fd.markdown || '';
+        return excerptFromMarkdown(source);
+      case 'quote':
+        source = fd.quote || '';
+        break;
+      case 'link':
+        source = fd.description || fd.title || fd.url || '';
+        break;
+      case 'photo':
+        source = fd.caption || '';
+        break;
+      case 'video':
+        source = fd.description || fd.title || '';
+        break;
+      case 'audio':
+        source = fd.description || (fd.title && fd.artist ? `${fd.title} — ${fd.artist}` : (fd.title || '')) || '';
+        break;
+      case 'uploader':
+        if (fd.description) source = fd.description;
+        else if (Array.isArray(fd.files) && fd.files.length) source = fd.files.map((f:any)=>f.name).slice(0,3).join(', ');
+        break;
+      default:
+        source = '';
+    }
+    return (source || '').toString().slice(0, 160);
+  }, [formData.featherName, featherData]);
 
   useEffect(()=>{
     fetch('/api/feathers').then(r=>r.ok?r.json():null).then(d=>{
@@ -68,6 +103,12 @@ const WritePage: React.FC = () => {
       return;
     }
   }, [user, loading, router]);
+
+  // Reset feather-specific data when switching post type to avoid stale values
+  useEffect(() => {
+    setFeatherData({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.featherName]);
 
   const generateSlug = (title: string) => {
     return title
@@ -110,8 +151,9 @@ const WritePage: React.FC = () => {
       // Single media placeholder
       if (val && val._file instanceof File) {
         const result = await uploadOne(val._file);
-        if (!result?.data?.url) throw new Error('Upload result missing URL');
-        clone[key] = result.data.url;
+        if (!result?.data) throw new Error('Upload result missing data');
+        const wantId = val._expect === 'id' || key.toLowerCase().includes('image') || key === 'imageId';
+        clone[key] = wantId ? result.data.id : result.data.url;
       } else if (Array.isArray(val)) {
         const newArr: any[] = [];
         for (const item of val) {
@@ -140,13 +182,19 @@ const WritePage: React.FC = () => {
     return clone;
   }
 
-  const handleSubmit = async (status: 'DRAFT' | 'PUBLISHED') => {
+  const handleSubmit = async (target: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED') => {
     setSaving(true);
     try {
     // First, flush any deferred uploads
     const resolvedFeatherData = await flushDeferredFiles();
     // Ensure slug present
     const finalSlug = formData.slug || generateSlug(formData.title);
+    // Decide publishedAt and excerpt
+  // Compute excerpt from feather data when not explicitly provided
+  const computedExcerpt = formData.excerpt || liveExcerpt || '';
+    const publishTime = target === 'SCHEDULED'
+      ? (formData.publishedAt || undefined)
+      : (target === 'PUBLISHED' ? new Date().toISOString() : undefined);
     const response = await fetch('/api/posts', {
         method: 'POST',
         headers: {
@@ -155,8 +203,9 @@ const WritePage: React.FC = () => {
         body: JSON.stringify({
           ...formData,
           slug: finalSlug,
-          visibility: status, // API expects visibility
-          publishedAt: status === 'PUBLISHED' ? new Date().toISOString() : undefined,
+          excerpt: computedExcerpt,
+          visibility: target, // API expects visibility among DRAFT|PUBLISHED|SCHEDULED
+          publishedAt: publishTime,
       feather: formData.featherName.toUpperCase(),
       featherData: resolvedFeatherData,
         }),
@@ -199,7 +248,7 @@ const WritePage: React.FC = () => {
                 type="button"
                 onClick={() => handleSubmit('DRAFT')}
                 disabled={saving || !formData.title}
-                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Draft'}
               </button>
@@ -207,19 +256,19 @@ const WritePage: React.FC = () => {
                 type="button"
                 onClick={() => handleSubmit('PUBLISHED')}
                 disabled={saving || !formData.title}
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                className="rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
               >
                 {saving ? 'Publishing...' : 'Publish'}
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="space-y-6 lg:col-span-2">
               {/* Title */}
               <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="title" className="mb-2 block text-sm font-medium text-gray-700">
                   Title
                 </label>
                 <input
@@ -227,14 +276,14 @@ const WritePage: React.FC = () => {
                   id="title"
                   value={formData.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter post title..."
                 />
               </div>
 
               {/* Slug */}
               <div>
-                <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="slug" className="mb-2 block text-sm font-medium text-gray-700">
                   URL Slug
                 </label>
                 <input
@@ -242,7 +291,7 @@ const WritePage: React.FC = () => {
                   id="slug"
                   value={formData.slug}
                   onChange={(e) => setFormData(prev => ({ ...prev, slug: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="url-slug"
                 />
                 <p className="mt-1 text-sm text-gray-500">
@@ -250,29 +299,16 @@ const WritePage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Content */}
-              <div>
-                <label htmlFor="body" className="block text-sm font-medium text-gray-700 mb-2">
-                  Content
-                </label>
-                <textarea
-                  id="body"
-                  rows={16}
-                  value={formData.body}
-                  onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Start writing your post..."
-                />
-              </div>
+              {/* Content removed: feathers provide their own required fields (e.g., Text -> markdown) */}
               {/* Feather Specific Fields */}
-              {feathers.filter(f=> (f as any).slug === formData.featherName).map(f=> <div key={(f as any).slug} className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">{(f as any).name} Options</h3>
+              {feathers.filter(f=> (f as any).slug === formData.featherName).map(f=> <div key={(f as any).slug} className="rounded-lg border border-gray-200 bg-white p-4">
+                <h3 className="mb-3 text-lg font-medium text-gray-900">{(f as any).name} Options</h3>
                 <FeatherDynamicFields deferUploads fields={(f as any).fields||[]} value={featherData} onChange={setFeatherData} />
               </div>)}
 
               {/* Excerpt */}
               <div>
-                <label htmlFor="excerpt" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="excerpt" className="mb-2 block text-sm font-medium text-gray-700">
                   Excerpt (Optional)
                 </label>
                 <textarea
@@ -280,11 +316,11 @@ const WritePage: React.FC = () => {
                   rows={3}
                   value={formData.excerpt}
                   onChange={(e) => setFormData(prev => ({ ...prev, excerpt: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Brief summary or excerpt..."
                 />
                 <p className="mt-1 text-sm text-gray-500">
-                  A short summary that appears in post listings. Leave blank to auto-generate from content.
+                  Leave blank to auto-generate from content: “{liveExcerpt}”.
                 </p>
               </div>
             </div>
@@ -292,18 +328,18 @@ const WritePage: React.FC = () => {
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Post Type (Feather) */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Post Type</h3>
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Post Type</h3>
                 <div className="space-y-2">
                   {(feathers.length?feathers:[]).map((feather) => (
-                    <label key={(feather as any).slug} className="flex items-start space-x-3 cursor-pointer">
+                    <label key={(feather as any).slug} className="flex cursor-pointer items-start space-x-3">
                       <input
                         type="radio"
                         name="feather"
         value={(feather as any).slug || (feather as any).id}
         checked={formData.featherName === ((feather as any).slug || (feather as any).id)}
         onChange={(e) => setFormData(prev => ({ ...prev, featherName: e.target.value }))}
-                        className="mt-1 focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300"
+                        className="mt-1 size-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                       />
                       <div>
         <div className="text-sm font-medium text-gray-900">{(feather as any).name}</div>
@@ -315,23 +351,11 @@ const WritePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Status */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Status</h3>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="DRAFT">Draft</option>
-                  <option value="PUBLISHED">Published</option>
-                  <option value="SCHEDULED">Scheduled</option>
-                </select>
-              </div>
+              {/* Status card removed per request */}
 
               {/* Tags */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Tags</h3>
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Tags</h3>
                 <input
                   type="text"
                   placeholder="Add tags separated by commas"
@@ -339,7 +363,7 @@ const WritePage: React.FC = () => {
                     const tags = e.target.value.split(',').map(tag => tag.trim()).filter(Boolean);
                     setFormData(prev => ({ ...prev, tags }));
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="mt-1 text-sm text-gray-500">
                   Separate tags with commas
@@ -347,8 +371,8 @@ const WritePage: React.FC = () => {
               </div>
 
               {/* Categories */}
-              <div className="bg-white border border-gray-200 rounded-lg p-4">
-                <h3 className="text-lg font-medium text-gray-900 mb-3">Categories</h3>
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <h3 className="mb-3 text-lg font-medium text-gray-900">Categories</h3>
                 <input
                   type="text"
                   placeholder="Add categories separated by commas"
@@ -356,7 +380,7 @@ const WritePage: React.FC = () => {
                     const categories = e.target.value.split(',').map(cat => cat.trim()).filter(Boolean);
                     setFormData(prev => ({ ...prev, categories }));
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <p className="mt-1 text-sm text-gray-500">
                   Separate categories with commas
