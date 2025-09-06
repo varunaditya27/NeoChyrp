@@ -48,7 +48,31 @@ export const FeatherDynamicFields: React.FC<Props> = ({ fields, value, onChange,
     return effectiveMax !== undefined && f.size > effectiveMax;
   }
 
+  function matchesAccept(file: File, accept?: string) {
+    if (!accept || accept.trim() === '') return true;
+    const tokens = accept.split(',').map(s=>s.trim()).filter(Boolean);
+    if (!tokens.length) return true;
+    const mime = file.type.toLowerCase();
+    const name = file.name.toLowerCase();
+    return tokens.some(tok => {
+      const t = tok.toLowerCase();
+      if (t.endsWith('/*')) {
+        const major = t.slice(0, -2);
+        return mime.startsWith(major + '/');
+      }
+      if (t.startsWith('.')) {
+        return name.endsWith(t);
+      }
+      // explicit mime like image/png or video/mp4
+      return mime === t;
+    });
+  }
+
   async function handleUploadSingle(field: FeatherFieldDef, file: File) {
+    if (!matchesAccept(file, field.accept)) {
+      alert(`Invalid file type for ${field.label}. Allowed: ${field.accept}`);
+      return;
+    }
     if (fileTooLarge(file)) {
       alert(`File exceeds maximum size ${(effectiveMax!/1024/1024).toFixed(2)} MB`);
       return;
@@ -90,6 +114,10 @@ export const FeatherDynamicFields: React.FC<Props> = ({ fields, value, onChange,
 
   async function handleUploadMultiple(field: FeatherFieldDef, files: FileList) {
     const valid = Array.from(files).filter(f=> {
+      if (!matchesAccept(f, field.accept)) {
+        alert(`File '${f.name}' is not an allowed type. Allowed: ${field.accept || 'any'}`);
+        return false;
+      }
       if (fileTooLarge(f)) {
         alert(`File '${f.name}' exceeds maximum size ${(effectiveMax!/1024/1024).toFixed(2)} MB`);
         return false;
@@ -155,21 +183,22 @@ export const FeatherDynamicFields: React.FC<Props> = ({ fields, value, onChange,
     };
   };
 
-  // Only render required fields per feather
-  const requiredFields = Array.isArray(fields) ? fields.filter(f => !!f.required) : [];
+  // Render all fields; mark required ones
+  const visibleFields = Array.isArray(fields) ? fields : [];
 
   return <div className="space-y-4">
-    {requiredFields.map(f=> {
+    {visibleFields.map(f=> {
       const val = value?.[f.name];
       const common = {
         id: f.name,
         name: f.name,
         value: (val ?? ''),
         onChange: (e: any)=> update(f.name, e.target.type==='checkbox'? e.target.checked : e.target.value),
-        className: 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+        className: 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+        required: !!f.required
       } as any;
       return <div key={f.name}>
-  <label htmlFor={f.name} className="mb-2 block text-sm font-medium text-gray-700">{f.label}</label>
+  <label htmlFor={f.name} className="mb-2 block text-sm font-medium text-gray-700">{f.label}{f.required && <span className="ml-1 text-red-600">*</span>}</label>
         {f.type === 'markdown' && (
           <MarkdownEditor
             value={val || ''}
@@ -180,7 +209,13 @@ export const FeatherDynamicFields: React.FC<Props> = ({ fields, value, onChange,
           />
         )}
         {f.type==='textarea' && <textarea rows={4} {...common} placeholder={f.placeholder} /> }
-        {['text','url','number'].includes(f.type) && <input type={f.type==='number'?'number':'text'} {...common} placeholder={f.placeholder} />}
+        {['text','url','number'].includes(f.type) && (
+          <input
+            type={f.type==='number'? 'number' : (f.type==='url' ? 'url' : 'text')}
+            {...common}
+            placeholder={f.placeholder}
+          />
+        )}
         {f.type === 'select' && (
           <select
             id={f.name}
@@ -188,6 +223,7 @@ export const FeatherDynamicFields: React.FC<Props> = ({ fields, value, onChange,
             value={val ?? ''}
             onChange={(e)=> update(f.name, e.target.value)}
             className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            required={!!f.required}
           >
             {(f.options || []).map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
