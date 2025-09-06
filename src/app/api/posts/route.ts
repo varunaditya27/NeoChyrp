@@ -6,11 +6,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-import { getRequestUser } from '@/src/lib/auth/requestUser';
-import { featherRegistry } from '@/src/lib/feathers/registry';
-
 import { canCreateContent } from '@/src/lib/auth/adminAccess';
+import { getRequestUser } from '@/src/lib/auth/requestUser';
+
 import { prisma } from '@/src/lib/db';
+import { featherRegistry } from '@/src/lib/feathers/registry';
 
 
 export async function GET() {
@@ -66,8 +66,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { title, slug, body: content, excerpt, feather, visibility, publishedAt, featherData } = body;
+  const body = await request.json();
+  const { title, slug, body: content, excerpt, feather, visibility, publishedAt, featherData } = body;
+  const tagsInput: unknown = (body as any)?.tags;
+  const categoriesInput: unknown = (body as any)?.categories;
 
     if (!title) {
       return NextResponse.json(
@@ -76,12 +78,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate slug if not provided
-    const finalSlug = slug || title
+    // Helpers
+    const slugify = (s: string) => s
+      .toString()
       .toLowerCase()
       .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
       .trim();
+
+    // Generate slug if not provided
+    const finalSlug = slug || slugify(title);
 
     // Check if slug already exists
     const existingPost = await prisma.post.findUnique({
@@ -122,8 +129,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // For TEXT feather we still require content (body or markdown), for others allow absence of body
-    if (finalFeather === 'TEXT' && (!content || typeof content !== 'string' || !content.trim())) {
+    // Unify content source: prefer explicit body, else allow text.markdown from featherData
+    let bodyContent: string | null = (typeof content === 'string' && content.trim()) ? content : null;
+    if (!bodyContent && finalFeather === 'TEXT' && sanitizedFeatherData && typeof sanitizedFeatherData.markdown === 'string') {
+      const md = sanitizedFeatherData.markdown.trim();
+      if (md) bodyContent = md;
+    }
+    // For TEXT feather we require body content (from either source)
+    if (finalFeather === 'TEXT' && (!bodyContent || !bodyContent.trim())) {
       return NextResponse.json(
         { success: false, message: 'Content body is required for text posts' },
         { status: 400 }
@@ -140,8 +153,8 @@ export async function POST(request: NextRequest) {
     // Derive excerpt: prefer explicit excerpt, then body substring (text), else feather generator
     let finalExcerpt: string | undefined = excerpt;
     if (!finalExcerpt) {
-      if (content && typeof content === 'string' && content.trim()) {
-        finalExcerpt = content.substring(0, 200) + (content.length > 200 ? '...' : '');
+      if (bodyContent && typeof bodyContent === 'string' && bodyContent.trim()) {
+        finalExcerpt = bodyContent.substring(0, 200) + (bodyContent.length > 200 ? '...' : '');
       } else if (sanitizedFeatherData) {
         try {
           finalExcerpt = featherRegistry.generateExcerpt(finalFeather.toLowerCase(), sanitizedFeatherData) || undefined;
@@ -151,35 +164,90 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const post = await prisma.post.create({
-      data: {
-        title,
-        slug: finalSlug,
-        body: content || null,
-        excerpt: finalExcerpt || null,
-        feather: finalFeather as any,
-        featherData: sanitizedFeatherData,
-        visibility: finalVisibility as any,
-        publishedAt: finalVisibility === 'PUBLISHED' ? (publishedAt ? new Date(publishedAt) : new Date()) : null,
-        authorId: user.id,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            username: true,
-            displayName: true,
+    // Normalize tags & categories input
+    const tagNames: string[] = Array.isArray(tagsInput)
+      ? (tagsInput as any[]).map(v => (typeof v === 'string' ? v : '')).filter(Boolean)
+      : [];
+    const categoryNames: string[] = Array.isArray(categoriesInput)
+      ? (categoriesInput as any[]).map(v => (typeof v === 'string' ? v : '')).filter(Boolean)
+      : [];
+
+    const uniqueTagSlugs = Array.from(new Set(tagNames.map(n => slugify(n)))).filter(Boolean);
+    const uniqueCategorySlugs = Array.from(new Set(categoryNames.map(n => slugify(n)))).filter(Boolean);
+
+    // Use a transaction to create post, upsert tags/categories, and link them
+    const result = await prisma.$transaction(async (tx) => {
+      // Upsert tags
+      const tagRecords = [] as { id: string; slug: string }[];
+      for (const slug of uniqueTagSlugs) {
+        const name = tagNames.find(n => slugify(n) === slug) || slug;
+        const rec = await tx.tag.upsert({
+          where: { slug },
+          create: { slug, name },
+          update: { name },
+        });
+        tagRecords.push({ id: rec.id, slug: rec.slug });
+      }
+
+      // Upsert categories
+      const categoryRecords = [] as { id: string; slug: string }[];
+      for (const slug of uniqueCategorySlugs) {
+        const name = categoryNames.find(n => slugify(n) === slug) || slug;
+        const rec = await tx.category.upsert({
+          where: { slug },
+          create: { slug, name },
+          update: { name },
+        });
+        categoryRecords.push({ id: rec.id, slug: rec.slug });
+      }
+
+      // Create post
+    const post = await tx.post.create({
+        data: {
+          title,
+          slug: finalSlug,
+      body: bodyContent || null,
+          excerpt: finalExcerpt || null,
+          feather: finalFeather as any,
+          featherData: sanitizedFeatherData,
+          visibility: finalVisibility as any,
+          publishedAt: finalVisibility === 'PUBLISHED' ? (publishedAt ? new Date(publishedAt) : new Date()) : null,
+          authorId: user.id,
+        },
+        include: {
+          author: {
+            select: {
+              id: true,
+              username: true,
+              displayName: true,
+            },
           },
         },
-      },
+      });
+
+      // Link tags & categories if provided
+      if (tagRecords.length) {
+        await tx.postTag.createMany({
+          data: tagRecords.map(tr => ({ postId: post.id, tagId: tr.id })),
+          skipDuplicates: true,
+        });
+      }
+      if (categoryRecords.length) {
+        await tx.postCategory.createMany({
+          data: categoryRecords.map(cr => ({ postId: post.id, categoryId: cr.id })),
+          skipDuplicates: true,
+        });
+      }
+
+      return post;
     });
 
     // Safety log (shouldn't happen with new validation)
     if (finalFeather !== 'TEXT' && !sanitizedFeatherData) {
-      console.warn(`Post ${post.id} created with feather ${finalFeather} but no featherData payload (unexpected).`);
+      console.warn(`Post ${result.id} created with feather ${finalFeather} but no featherData payload (unexpected).`);
     }
 
-    return NextResponse.json({ success: true, post, message: 'Post created successfully' });
+    return NextResponse.json({ success: true, post: result, message: 'Post created successfully' });
   } catch (error) {
     console.error('Create post error:', error);
     return NextResponse.json(

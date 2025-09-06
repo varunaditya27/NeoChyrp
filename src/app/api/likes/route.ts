@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
   const { postId } = ToggleLikeSchema.parse(body);
 
-    const session = await getSession();
+  const session = await getSession(request);
 
   // Derive userId from session for security
   if (!session?.user?.id) {
