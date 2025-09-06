@@ -1,166 +1,146 @@
-# NeoChyrp App (Modern Chyrp Rebuild)
+# NeoChyrp
 
-Modern, modular reimplementation of the classic Chyrp blogging engine using:
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-- Next.js 15 (App Router, Server Components)
-- TypeScript (strict)
-- Tailwind CSS (utility-first design system)
-- Prisma ORM (PostgreSQL via Supabase)
-- Supabase (Auth, DB hosting, optional storage & realtime)
+A modern, modular, and extensible blogging engine. NeoChyrp is a complete rebuild of the classic Chyrp blogging engine, designed from the ground up for performance, security, and an excellent developer experience.
 
-## Vision
+It is built with a powerful tech stack including Next.js 15 (App Router), TypeScript, Tailwind CSS, and Prisma, with Supabase for authentication and database hosting.
 
-Recreate Chyrp's lightweight, feather-based extensibility with a contemporary stack that embraces:
+## Features
 
-1. Composability (feature modules encapsulate their domain)
-2. Performance (server components, edge-friendly APIs later)
-3. Extensibility (clear domain boundaries + event-driven modules)
-4. Developer ergonomics (type safety, consistent conventions)
+NeoChyrp comes packed with features that make it a powerful and flexible platform for any kind of blog or publication.
 
-## High-Level Feature Mapping
+- **Content Management:**
+    - **Feathers:** Create diverse content with different "Feathers" (post types) like Text, Photo, Video, Audio, Quotes, and Links.
+    - **WYSIWYG Editor:** A modern Markdown editor for writing content.
+    - **Tagging & Categorization:** Organize your posts with tags and nested categories.
+- **Community & Interaction:**
+    - **Comments:** A full-featured, threaded commenting system.
+    - **Likes:** Allow users to like and engage with posts.
+    - **Webmentions:** A core part of the IndieWeb, allowing for rich interactions between blogs.
+- **Extensibility:**
+    - **Modular Architecture:** A robust, event-driven module system allows for easy extension and customization.
+    - **Permissions:** Fine-grained, role-based access control (RBAC) for users, groups, and permissions.
+- **Technical Features:**
+    - **API-First Design:** A comprehensive API for all major functionalities.
+    - **Database Migrations:** Database schema management with Prisma Migrate.
+    - **Authentication:** Secure authentication powered by Supabase.
 
-| Legacy Concept | Modern Equivalent |
-|----------------|------------------|
-| Feathers (text/photo/etc.) | `FeatherType` enum + `featherData` JSON + discriminated union types |
-| Modules (comments, likes) | Dedicated module directories with domain/application layers |
-| Themes | Tailwind + theming tokens + future theme pack directory |
-| Caching | Layered: rendered HTML cache field + future Redis/edge cache |
+## Tech Stack
+
+- **Framework:** [Next.js](https://nextjs.org/) 15 (App Router)
+- **Language:** [TypeScript](https://www.typescriptlang.org/) (strict)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **ORM:** [Prisma](https://www.prisma.io/)
+- **Database:** [PostgreSQL](https://www.postgresql.org/) (via [Supabase](https://supabase.com/))
+- **Authentication:** [Supabase Auth](https://supabase.com/auth)
+
+## Architecture
+
+NeoChyrp is built on a modern, modular architecture that emphasizes separation of concerns and developer ergonomics.
+
+- **Domain-Driven Design (DDD):** Each feature is treated as a "module" with its own domain, application, infrastructure, and UI layers.
+- **Event-Driven:** Modules communicate through an event bus, keeping them decoupled and making the system highly extensible.
+- **API-First:** The majority of functionality is exposed via a RESTful API, allowing for flexible client implementations.
 
 ## Directory Structure
 
 ```text
-neo-chyrp-app/
-  prisma/            # Database schema + migrations + seed
-  src/
-    app/             # Next.js App Router routes (RSC)
-    components/      # Shared presentational components (UI primitives, layout)
-    lib/             # Cross-cutting infrastructure (db, config, logger, auth)
-    modules/         # Feature modules (domain/application/infrastructure/ui)
-    styles/          # Global CSS & design tokens
+neo-chyrp/
+├── prisma/            # Database schema, migrations, and seed script
+├── scripts/           # Helper scripts for bootstrapping the application
+├── src/
+│   ├── app/           # Next.js App Router routes (RSC)
+│   ├── components/    # Shared UI components
+│   ├── lib/           # Core infrastructure (DB, auth, events, etc.)
+│   ├── modules/       # Feature modules (comments, likes, etc.)
+│   └── styles/        # Global styles
+└── ...
 ```
 
-### Modules Pattern
+## Getting Started
 
-Each module (e.g., content, comments, likes) contains:
+Follow these instructions to get NeoChyrp up and running on your local machine for development and testing purposes.
 
-- `domain/` entities, value objects, events
-- `application/` commands & queries orchestrating domain logic
-- `infrastructure/` persistence and external service adapters
-- `ui/` feature-specific components
-- `api/` optional route handlers (colocated when feature-specific)
+### Prerequisites
 
-### Removing Legacy Coupling
+- [Node.js](https://nodejs.org/) (v20.x or later)
+- [npm](https://www.npmjs.com/) (v10.x or later)
+- A [Supabase](https://supabase.com/) account for database and authentication.
 
-The original PHP codebase (`chyrp-lite-2025.02/`) remains for reference only. New implementation avoids porting line-by-line and instead re-expresses concepts with modern primitives.
+### Installation
 
-## Environment Setup
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/neo-chyrp.git
+    cd neo-chyrp
+    ```
 
-1. Copy `.env.example` to `.env` and fill values (Supabase project credentials, DB URLs).
-2. Install dependencies and run migrations.
-3. Seed baseline data (owner user, permissions, welcome post).
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
 
-### Core Commands
+3.  **Set up environment variables:**
+    Copy the `.env.example` file to a new file named `.env` and fill in the required values.
+    ```bash
+    cp .env.example .env
+    ```
 
-```bash
-# install deps
-npm install
+4.  **Run database migrations:**
+    This will apply the database schema to your Supabase database.
+    ```bash
+    npm run db:migrate
+    ```
 
-# validate & generate Prisma client
-npm run prisma:validate
-npm run prisma:generate
+5.  **Seed the database:**
+    This will populate the database with some initial data (e.g., an admin user, default settings).
+    ```bash
+    npm run db:seed
+    ```
 
-# create/apply dev migration (writes to prisma/migrations)
-npm run db:migrate
-
-# seed baseline data (idempotent)
-npm run db:seed
-
-# start dev server
-npm run dev
-```
-
-See `prisma/README_DB.md` for full database workflow details.
+6.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+    The application should now be running at [http://localhost:3000](http://localhost:3000).
 
 ### One-Command Bootstrap
 
-Cross-platform helper scripts in `scripts/` perform install, validate, generate, migrate, seed, then start dev.
+For convenience, you can use the helper scripts in the `scripts/` directory to perform all the setup steps at once.
 
-Usage examples:
+-   **macOS/Linux:**
+    ```bash
+    ./scripts/start.sh
+    ```
+-   **Windows (PowerShell):**
+    ```bash
+    ./scripts/start.ps1
+    ```
+-   **Windows (CMD):**
+    ```bash
+    scripts\\start.cmd
+    ```
 
-```bash
-# macOS/Linux (bash/zsh)
-./scripts/start.sh           # full cycle
-./scripts/start.sh --fast    # skip install/validate/migrate (just dev if already set up)
-./scripts/start.sh --no-seed # skip seeding
+## Configuration
 
-# Windows PowerShell
-pwsh ./scripts/start.ps1
-pwsh ./scripts/start.ps1 -Fast -NoSeed
+All configuration is done via environment variables. See the `.env.example` file for a full list of available options.
 
-# Windows cmd.exe
-scripts\\start.cmd
-scripts\\start.cmd --fast --no-seed
-```
+| Variable                      | Description                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_APP_NAME`        | The name of your application.                                                                           |
+| `NEXT_PUBLIC_APP_URL`         | The public URL of your application.                                                                     |
+| `NEXT_PUBLIC_SUPABASE_URL`    | Your Supabase project URL.                                                                              |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anonymous public key.                                                                     |
+| `SUPABASE_SERVICE_ROLE_KEY`   | Your Supabase service role key (should be kept secret).                                                 |
+| `DATABASE_URL`                | The connection string for your Supabase database (with connection pooling).                             |
+| `DIRECT_URL`                  | The direct connection string for your Supabase database (used for migrations).                          |
+| `NEXTAUTH_SECRET`             | A secret key for NextAuth.                                                                              |
+| `NEXTAUTH_URL`                | The URL for NextAuth.                                                                                   |
+| `ENCRYPTION_KEY`              | A 32-byte key for encryption.                                                                           |
+| `JWT_SIGNING_KEY`             | A key for signing JWTs.                                                                                 |
 
-Flags:
 
-- `--fast` / `-Fast`: skip dependency install & prisma validation/migration.
-- `--no-seed` / `-NoSeed`: skip executing the idempotent seed.
-
-### Authentication (Supabase Google OAuth)
-
-Google sign-in is enabled through Supabase OAuth. Ensure in the Supabase dashboard you have:
-
-- Enabled Google provider with Client ID/Secret.
-- Added authorized redirect: `https://<your-dev-host>/*` (Supabase handles the return to the origin automatically).
-
-Environment variables required (already in `.env.example`):
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (server-only operations, never exposed client-side)
-
-UI: The landing page auth modal shows a "Continue with Google" button. After successful sign-in, session state is managed by the Supabase JS client via `AuthProvider`.
-
-User Sync: A background call to `POST /api/auth/sync` persists the Supabase user into the Prisma `User` table (first user becomes OWNER; others USER). The endpoint is idempotent and updates displayName if it changes at the provider.
-
- 
-## Prisma Model Notes
-
-- `Post.featherData` stores flexible JSON per feather type.
-- `renderedBody` caches transformation (markdown -> HTML) for faster listing & `read_more` truncation.
-- Future tables (rights, sitemap) can be appended incrementally without breaking existing layers.
-
- 
-## Next Steps (Suggested Roadmap)
-
-1. Implement authentication (Supabase Auth or NextAuth adapter with Prisma).
-2. Slug generation + validation (unique per post, fallback to cuid snippet).
-3. Markdown rendering pipeline with sanitization & syntax highlighting.
-4. Comments module domain + CRUD API + moderation queues.
-5. Likes & views events (debounced, privacy-aware).
-6. Tag & category management UI + filtering on blog index.
-7. Webmention receiving endpoint & verification workflow.
-8. Caching strategy (ETags + incremental static regen for public pages).
-9. Theme system (CSS variables per theme, runtime switcher).
-10. Sitemap & robots generation.
-
- 
-## Conventions
-
-- Path aliases use absolute imports from project root (`@/src/...`).
-- All cross-module consumption through each module's published exports (avoid deep linking into internal folders).
-- Server actions / route handlers encapsulate validation (zod) before calling application layer.
-
- 
-## Database & Migrations
-
-Database schema lives in `prisma/schema.prisma`; migration history is committed in `prisma/migrations/`. Use `npm run db:migrate` locally and `npm run db:deploy` in CI/production. Seed script: `prisma/seed.ts` (TypeScript only, idempotent baseline).
-
- 
 ## License
 
-Pending (align with original Chyrp Lite license if derivative aspects apply; otherwise MIT recommended). Add a NOTICE if reusing assets.
-
----
-Scaffold only: Implementation details intentionally stubbed with comments to guide development.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
