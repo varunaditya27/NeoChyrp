@@ -148,12 +148,19 @@ async function renderVideo(payload: VideoFeatherPayload): Promise<string> {
     }
   } else {
     // Native HTML5 video
+  const isHttp = /^https?:\/\//i.test(payload.videoUrl);
+  const videoSrc = isHttp ? payload.videoUrl : `/api/assets/${payload.videoUrl}`;
+    const posterSrc = payload.posterUrl && /^https?:\/\//i.test(payload.posterUrl)
+      ? payload.posterUrl
+      : (payload.posterUrl ? `/api/assets/${payload.posterUrl}` : undefined);
+
     html += `<video class="video-player" controls`;
-    if (payload.posterUrl) html += ` poster="${escapeHtml(payload.posterUrl)}"`;
+    if (posterSrc) html += ` poster="${escapeHtml(posterSrc)}"`;
 
     html += `>`;
-    html += `<source src="${escapeHtml(payload.videoUrl)}" type="video/${resolvedType}">`;
-    html += `<p>Your browser doesn't support HTML5 video. <a href="${escapeHtml(payload.videoUrl)}">Download the video</a> instead.</p>`;
+  const nativeType = payload.videoType || detectVideoType(videoSrc) || 'mp4';
+  html += `<source src="${escapeHtml(videoSrc)}" type="video/${nativeType}">`;
+    html += `<p>Your browser doesn't support HTML5 video. <a href="${escapeHtml(videoSrc)}">Download the video</a> instead.</p>`;
     html += `</video>`;
   }
 

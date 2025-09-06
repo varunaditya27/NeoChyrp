@@ -26,8 +26,8 @@ const audioFields = [
     type: 'media' as const,
     label: 'Audio',
     required: true,
-    placeholder: 'Upload an audio file or paste an MP3/WAV/OGG URL',
-    accept: 'audio/*',
+  placeholder: 'Upload an audio file or paste an MP3/WAV/OGG URL',
+  accept: 'audio/*',
   },
   {
     name: 'audioType',
@@ -130,12 +130,13 @@ async function renderAudio(payload: AudioFeatherPayload): Promise<string> {
   }
 
   // Audio player
-  const resolvedType = payload.audioType || detectAudioType(payload.audioUrl) || 'mp3';
-  html += `<audio class="audio-player" controls`;
-
-  html += `>`;
-  html += `<source src="${escapeHtml(payload.audioUrl)}" type="audio/${resolvedType}">`;
-  html += `<p>Your browser doesn't support HTML5 audio. <a href="${escapeHtml(payload.audioUrl)}">Download the audio file</a> instead.</p>`;
+  const audioSrc = /^https?:\/\//i.test(payload.audioUrl)
+    ? payload.audioUrl
+    : `/api/assets/${payload.audioUrl}`;
+  const resolvedType = payload.audioType || detectAudioType(audioSrc) || 'mp3';
+  html += `<audio class="audio-player" controls>`;
+  html += `<source src="${escapeHtml(audioSrc)}" type="audio/${resolvedType}">`;
+  html += `<p>Your browser doesn't support HTML5 audio. <a href="${escapeHtml(audioSrc)}">Download the audio file</a> instead.</p>`;
   html += `</audio>`;
 
   if (payload.description) {

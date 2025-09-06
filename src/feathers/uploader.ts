@@ -30,6 +30,12 @@ export const UploaderFeatherSchema = z.object({
 export type UploaderFeatherPayload = z.infer<typeof UploaderFeatherSchema>;
 export type FileItem = z.infer<typeof FileSchema>;
 
+// Resolve asset IDs to public endpoint while preserving full URLs
+const toPublicUrl = (u: string | undefined): string | undefined => {
+  if (!u) return undefined;
+  return /^https?:\/\//i.test(u) ? u : `/api/assets/${u}`;
+};
+
 // Field definitions for admin UI
 const uploaderFields = [
   {
@@ -129,8 +135,8 @@ async function renderUploader(payload: UploaderFeatherPayload): Promise<string> 
 
   if (payload.layout === 'gallery') {
     // Gallery layout for images
-    const imageFiles = payload.files.filter(isImage);
-    const otherFiles = payload.files.filter(f => !isImage(f));
+  const imageFiles = payload.files.filter(isImage);
+  const otherFiles = payload.files.filter(f => !isImage(f));
 
     if (imageFiles.length > 0) {
       html += `<div class="uploader-gallery">`;
@@ -138,9 +144,9 @@ async function renderUploader(payload: UploaderFeatherPayload): Promise<string> 
       for (const file of imageFiles) {
         html += `<div class="gallery-item">`;
 
-        const imgSrc = file.thumbnail || file.url;
-        html += `<a href="${escapeHtml(file.url)}" class="gallery-link" data-lightbox="gallery">`;
-        html += `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(file.description || file.name)}" loading="lazy">`;
+  const imgSrc = toPublicUrl(file.thumbnail) || toPublicUrl(file.url)!;
+  html += `<a href="${escapeHtml(toPublicUrl(file.url)!)}" class="gallery-link" data-lightbox="gallery">`;
+  html += `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(file.description || file.name)}" loading="lazy">`;
         html += `</a>`;
 
         if (payload.showFileInfo && (file.description || file.name)) {
@@ -170,11 +176,11 @@ async function renderUploader(payload: UploaderFeatherPayload): Promise<string> 
       html += `<div class="grid-item">`;
 
       if (payload.showThumbnails && (file.thumbnail || isImage(file))) {
-        const imgSrc = file.thumbnail || (isImage(file) ? file.url : '');
+    const imgSrc = toPublicUrl(file.thumbnail) || (isImage(file) ? toPublicUrl(file.url) : '');
         if (imgSrc) {
           html += `<div class="grid-thumbnail">`;
           if (payload.allowDownload) {
-            html += `<a href="${escapeHtml(file.url)}" target="_blank">`;
+      html += `<a href="${escapeHtml(toPublicUrl(file.url)!)}" target="_blank">`;
           }
           html += `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(file.name)}" loading="lazy">`;
           if (payload.allowDownload) {
@@ -189,7 +195,7 @@ async function renderUploader(payload: UploaderFeatherPayload): Promise<string> 
       html += `<div class="grid-info">`;
 
       if (payload.allowDownload) {
-        html += `<a href="${escapeHtml(file.url)}" class="file-link" target="_blank">${escapeHtml(file.name)}</a>`;
+        html += `<a href="${escapeHtml(toPublicUrl(file.url)!)}" class="file-link" target="_blank">${escapeHtml(file.name)}</a>`;
       } else {
         html += `<span class="file-name">${escapeHtml(file.name)}</span>`;
       }
@@ -229,11 +235,11 @@ function renderFileList(files: FileItem[], payload: UploaderFeatherPayload, esca
     html += `<li class="file-item">`;
 
     if (payload.showThumbnails && (file.thumbnail || isImage(file))) {
-      const imgSrc = file.thumbnail || (isImage(file) ? file.url : '');
+    const imgSrc = toPublicUrl(file.thumbnail) || (isImage(file) ? toPublicUrl(file.url) : '');
       if (imgSrc) {
         html += `<div class="file-thumbnail">`;
         if (payload.allowDownload) {
-          html += `<a href="${escapeHtml(file.url)}" target="_blank">`;
+      html += `<a href="${escapeHtml(toPublicUrl(file.url)!)}" target="_blank">`;
         }
         html += `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(file.name)}" loading="lazy">`;
         if (payload.allowDownload) {
@@ -248,7 +254,7 @@ function renderFileList(files: FileItem[], payload: UploaderFeatherPayload, esca
     html += `<div class="file-info">`;
 
     if (payload.allowDownload) {
-      html += `<a href="${escapeHtml(file.url)}" class="file-link" target="_blank">${escapeHtml(file.name)}</a>`;
+      html += `<a href="${escapeHtml(toPublicUrl(file.url)!)}" class="file-link" target="_blank">${escapeHtml(file.name)}</a>`;
     } else {
       html += `<span class="file-name">${escapeHtml(file.name)}</span>`;
     }
