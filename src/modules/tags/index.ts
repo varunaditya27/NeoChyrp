@@ -187,12 +187,13 @@ export const tagService = {
    * Search tags by name
    */
   async searchTags(query: string, limit = 10) {
+    const q = query.trim();
     const tags = await prisma.tag.findMany({
       where: {
-        name: {
-          contains: query,
-          mode: 'insensitive',
-        },
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { slug: { contains: q, mode: 'insensitive' } },
+        ],
       },
       include: {
         _count: {
@@ -205,15 +206,35 @@ export const tagService = {
           },
         },
       },
-      orderBy: [
-        { name: 'asc' },
-      ],
       take: limit,
     });
 
-    // Sort by post count desc, then by name
+    const ql = q.toLowerCase();
+    function scoreTag(t: typeof tags[number]) {
+      const name = t.name.toLowerCase();
+      const slug = t.slug.toLowerCase();
+      let s = 0;
+      if (name === ql) s += 1000;
+      else if (name.startsWith(ql)) s += 800;
+      else if (name.includes(ql)) s += 400;
+      if (slug === ql) s += 300;
+      else if (slug.startsWith(ql)) s += 200;
+      else if (slug.includes(ql)) s += 100;
+      // Popularity boost
+      s += Math.min(100, t._count.posts);
+      return s;
+    }
+
     return tags
-      .sort((a, b) => b._count.posts - a._count.posts || a.name.localeCompare(b.name))
+      .sort((a, b) => {
+        const sa = scoreTag(a);
+        const sb = scoreTag(b);
+        if (sb !== sa) return sb - sa;
+        // tie-breakers: post count desc, then name asc
+        if (b._count.posts !== a._count.posts) return b._count.posts - a._count.posts;
+        return a.name.localeCompare(b.name);
+      })
+      .slice(0, limit)
       .map(tag => ({
         id: tag.id,
         name: tag.name,

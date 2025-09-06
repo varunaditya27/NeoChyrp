@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { tagService } from '@/src/modules/tags';
+import { TagSearch } from '@/src/components/tags/TagSearch';
 
 interface Tag {
   id: string;
@@ -52,11 +53,13 @@ async function TagCloud() {
 
     return (
       <div className="space-y-6">
-        <div>
+        <div className="space-y-4">
           <h1 className="text-3xl font-bold text-gray-900">Tags</h1>
           <p className="mt-2 text-gray-600">
             Discover content by browsing through {tags.length} tags
           </p>
+          {/* Searchable tags */}
+          <TagSearch />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
